@@ -8,29 +8,59 @@
       margin: 0;
       padding: 0;
       background-color: #000;
+      font-family: sans-serif;
     }
 
     img {
-      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
       object-fit: cover;
+      z-index: -1;
     }
 
-    h1 {
+    .nav {
       position: absolute;
       top: 20px;
       left: 20px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 20px;
+      border-radius: 12px;
       color: white;
-      font-family: sans-serif;
-      background: rgba(0, 0, 0, 0.5);
-      padding: 10px;
-      border-radius: 8px;
+    }
+
+    .nav h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+
+    .nav a {
+      display: block;
+      color: white;
+      text-decoration: none;
+      margin: 8px 0;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      transition: background 0.2s ease;
+    }
+
+    .nav a:hover {
+      background: rgba(255, 255, 255, 0.3);
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to Golf Tip Videos</h1>
   <img src="home-image.jpg" alt="Homepage Image">
+
+  <div class="nav">
+    <h1>Golf Tip Videos</h1>
+    <a href="golf_pairings_randomizer.html">Golf Pairings Randomizer</a>
+    <a href="montyhall.html">Monty Hall Game</a>
+    <a href="piano.html">Virtual Piano</a>
+    <a href="reflective_sphere_360.html">Reflective Sphere</a>
+  </div>
 </body>
 </html>
