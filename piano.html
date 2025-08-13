@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Piano (Simple, Working)</title>
+<style>
+  :root{
+    --bg:#0e1222; --panel:#151a33; --text:#e9ecf5; --muted:#a5adbd; --accent:#7aa2ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+       background: radial-gradient(1200px 800px at 70% -10%, #1d2250 0%, var(--bg) 48%, #0a0d1a 100%);
+       color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px}
+  .wrap{width:min(1100px,96vw); display:grid; gap:14px}
+  .panel{background:linear-gradient(180deg,#1a2144,#0c1126); border:1px solid rgba(255,255,255,.08);
+         border-radius:16px; box-shadow:0 16px 30px rgba(0,0,0,.35); padding:14px}
+  h1{margin:0 0 4px; font-size:20px}
+  .hint{color:var(--muted); font-size:12px}
+
+  /* Controls */
+  .controls{display:grid; grid-template-columns:repeat(6,minmax(120px,1fr)); gap:12px}
+  .ctrl{background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px}
+  .ctrl label{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:6px}
+  .ctrl .val{color:var(--text); font-variant-numeric:tabular-nums}
+  select,input[type="range"]{width:100%; background:transparent; accent-color:var(--accent)}
+  @media (max-width:900px){ .controls{grid-template-columns:repeat(3,minmax(120px,1fr))} }
+
+  /* Keyboard */
+  .kbd-panel{position:relative; height:280px}
+  .white-keys{position:relative; height:100%; background:linear-gradient(180deg,#12162e,#0b0f24 85%); border-radius:14px; padding:12px}
+  .white{display:inline-block; position:relative; height:100%; width:calc(100% / 14);
+         background:linear-gradient(180deg,#fff,#e9e9e9 70%,#e1e1e1); border:1px solid #cfcfcf;
+         border-bottom:4px solid #c7c7c7; border-radius:0 0 8px 8px; box-shadow:inset 0 -2px 0 rgba(0,0,0,.08); cursor:pointer}
+  .white.active{transform:translateY(1px); background:linear-gradient(180deg,#fff,#f7f7f7)}
+  .label{position:absolute; bottom:10px; left:0; right:0; text-align:center; font-size:11px; color:#666; pointer-events:none}
+  .black-layer{pointer-events:none} /* we’ll turn on pointer events per key */
+  .black{position:absolute; top:12px; height:60%; width:calc((100%/14)*0.64);
+         background:linear-gradient(180deg,#333,#000); border:1px solid #111; border-radius:0 0 6px 6px;
+         box-shadow:0 6px 16px rgba(0,0,0,.6), inset 0 -2px 0 rgba(255,255,255,.05); cursor:pointer; pointer-events:auto}
+  .black.active{transform:translateY(1px); background:linear-gradient(180deg,#444,#111)}
+
+  .footer{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); padding:0 4px}
+  .kbd{border:1px solid rgba(255,255,255,.25); border-radius:6px; padding:2px 6px; color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>🎹 Piano Simulator</h1>
+    <div class="hint">Click once anywhere to enable sound. Then click keys or use your keyboard.</div>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="ctrl"><label>Waveform <span class="val" id="wave-val">sine</span></label>
+        <select id="wave"><option>sine</option><option>triangle</option><option>square</option><option>sawtooth</option></select>
+      </div>
+      <div class="ctrl"><label>Attack (ms) <span class="val" id="a-val">15</span></label><input id="attack" type="range" min="0" max="500" value="15"></div>
+      <div class="ctrl"><label>Decay (ms) <span class="val" id="d-val">180</span></label><input id="decay" type="range" min="0" max="1200" value="180"></div>
+      <div class="ctrl"><label>Sustain <span class="val" id="s-val">0.6</span></label><input id="sustain" type="range" min="0" max="1" step="0.01" value="0.6"></div>
+      <div class="ctrl"><label>Release (ms) <span class="val" id="r-val">600</span></label><input id="release" type="range" min="50" max="3000" value="600"></div>
+      <div class="ctrl"><label>Tone (Hz) <span class="val" id="tone-val">3200</span></label><input id="tone" type="range" min="200" max="8000" value="3200"></div>
+      <div class="ctrl"><label>Detune (cents) <span class="val" id="detune-val">6</span></label><input id="detune" type="range" min="0" max="40" value="6"></div>
+      <div class="ctrl"><label>Volume <span class="val" id="vol-val">0.9</span></label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.9"></div>
+    </div>
+  </div>
+
+  <div class="panel kbd-panel" id="piano">
+    <div class="white-keys" id="whiteLayer"></div>
+    <div class="black-layer" id="blackLayer"></div>
+  </div>
+
+  <div class="footer">
+    <div>Mapped keys: <span class="kbd">A S D F G H J K L ;</span> (white) &nbsp; <span class="kbd">W E T Y U O P</span> (black)</div>
+    <div>If you still hear nothing, click the page once to unlock audio.</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---- Audio ----
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  const master = ctx.createGain();
+  master.gain.value = 0.9;
+  master.connect(ctx.destination);
+
+  // ---- UI refs ----
+  const $ = id => document.getElementById(id);
+  const ui = {
+    wave: $('wave'), waveVal: $('wave-val'),
+    attack: $('attack'), decay: $('decay'), sustain: $('sustain'), release: $('release'),
+    tone: $('tone'), detune: $('detune'), volume: $('volume'),
+    a: $('a-val'), d: $('d-val'), s: $('s-val'), r: $('r-val'), t: $('tone-val'), det: $('detune-val'), vol: $('vol-val')
+  };
+  function ms(v){ return Number(v)/1000; }
+  function settings(){
+    return {
+      wave: ui.wave.value,
+      attack: ms(ui.attack.value),
+      decay: ms(ui.decay.value),
+      sustain: Number(ui.sustain.value),
+      release: ms(ui.release.value),
+      tone: Number(ui.tone.value),
+      detune: Number(ui.detune.value)
+    };
+  }
+  function resume(){ if(ctx.state !== 'running') ctx.resume(); }
+
+  class Voice {
+    constructor(freq, s){
+      this.s = s;
+      this.filt = ctx.createBiquadFilter(); this.filt.type='lowpass'; this.filt.frequency.value=s.tone;
+      this.env = ctx.createGain(); this.env.gain.value=0;
+      this.o1 = ctx.createOscillator(); this.o2 = ctx.createOscillator();
+      this.o1.type=this.o2.type=s.wave;
+      this.o1.frequency.value = freq; this.o2.frequency.value = freq;
+      this.o1.detune.value = -s.detune/2; this.o2.detune.value = +s.detune/2;
+      this.o1.connect(this.filt); this.o2.connect(this.filt);
+      this.filt.connect(this.env); this.env.connect(master);
+    }
+    start(){
+      const now = ctx.currentTime, {attack,decay,sustain} = this.s;
+      this.o1.start(now); this.o2.start(now);
+      this.env.gain.cancelScheduledValues(now);
+      this.env.gain.setValueAtTime(0, now);
+      this.env.gain.linearRampToValueAtTime(1, now + attack);
+      this.env.gain.linearRampToValueAtTime(sustain, now + attack + decay);
+    }
+    stop(){
+      const now = ctx.currentTime, {release} = this.s;
+      this.env.gain.cancelScheduledValues(now);
+      this.env.gain.setValueAtTime(this.env.gain.value, now);
+      this.env.gain.linearRampToValueAtTime(0, now + release);
+      this.o1.stop(now + release + 0.02); this.o2.stop(now + release + 0.02);
+      setTimeout(()=>{ try{
+        this.o1.disconnect(); this.o2.disconnect(); this.filt.disconnect(); this.env.disconnect();
+      }catch(_){} }, (release*1000)+60);
+    }
+    update(s){
+      this.s = s;
+      this.o1.type=this.o2.type=s.wave;
+      this.o1.detune.value=-s.detune/2; this.o2.detune.value=+s.detune/2;
+      this.filt.frequency.setTargetAtTime(s.tone, ctx.currentTime, 0.03);
+    }
+  }
+
+  const active = new Map(); // midi -> Voice
+  function midiToFreq(m){ return 440 * Math.pow(2, (m-69)/12); }
+
+  // Build notes C4..B5
+  const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const notes = [];
+  for(let m=60; m<=83; m++){
+    const n = names[m%12], o = Math.floor(m/12)-1;
+    notes.push({midi:m, name:n+o, sharp:n.includes('#')});
+  }
+
+  // ---- Draw keyboard (robust layout) ----
+  const whiteLayer = $('whiteLayer');
+  const blackLayer = $('blackLayer');
+  const whites = notes.filter(n => !n.sharp);
+  const totalWhites = whites.length;
+  const whiteIndexByMidi = new Map();
+  whites.forEach((n, i) => {
+    whiteIndexByMidi.set(n.midi, i);
+    const el = document.createElement('div');
+    el.className = 'white';
+    el.dataset.midi = n.midi;
+    el.innerHTML = `<div class="label">${n.name}</div>`;
+    el.addEventListener('mousedown', press);
+    el.addEventListener('touchstart', press, {passive:false});
+    el.addEventListener('mouseup', release);
+    el.addEventListener('mouseleave', release);
+    el.addEventListener('touchend', release);
+    whiteLayer.appendChild(el);
+  });
+
+  notes.forEach(n => {
+    if(!n.sharp) return;
+    // find white index before this sharp
+    const prevWhiteMidi = n.midi - 1; // previous semitone is always the white below a sharp
+    const wi = whites.findIndex(w => w.midi === prevWhiteMidi);
+    if(wi < 0) return;
+    const leftPct = ((wi + 0.68) / totalWhites) * 100; // 0.68 sits it between the two whites nicely
+    const b = document.createElement('div');
+    b.className = 'black';
+    b.dataset.midi = n.midi;
+    b.style.left = `calc(${leftPct}% + 12px)`; // +12 to account for whiteLayer padding
+    b.addEventListener('mousedown', press);
+    b.addEventListener('touchstart', press, {passive:false});
+    b.addEventListener('mouseup', release);
+    b.addEventListener('mouseleave', release);
+    b.addEventListener('touchend', release);
+    blackLayer.appendChild(b);
+  });
+
+  function press(e){
+    e.preventDefault();
+    resume();
+    const el = e.currentTarget;
+    const midi = Number(el.dataset.midi);
+    if(active.has(midi)) return;
+    const v = new Voice(midiToFreq(midi), settings());
+    active.set(midi, v); v.start();
+    el.classList.add('active');
+  }
+  function release(e){
+    const el = e.currentTarget;
+    const midi = Number(el.dataset.midi);
+    const v = active.get(midi);
+    if(!v) return;
+    v.stop(); active.delete(midi);
+    el.classList.remove('active');
+  }
+  window.addEventListener('mouseup', () => { // safety: release all
+    active.forEach((v,midi)=>{ v.stop(); const k = document.querySelector(`[data-midi="${midi}"]`); if(k) k.classList.remove('active'); });
+    active.clear();
+  });
+
+  // ---- Computer keyboard mapping ----
+  const keyMap = { a:60,s:62,d:64,f:65,g:67,h:69,j:71,k:72,l:74,';':76,"'":77, // whites
+                   w:61,e:63,t:66,y:68,u:70,o:73,p:75 }; // blacks
+  const heldKeys = new Set();
+  window.addEventListener('keydown', (e)=>{
+    if(e.repeat) return;
+    const k = e.key.toLowerCase(); const midi = keyMap[k]; if(!midi) return;
+    resume(); if(heldKeys.has(k)) return; heldKeys.add(k);
+    if(!active.has(midi)){ const v = new Voice(midiToFreq(midi), settings()); active.set(midi, v); v.start(); }
+    highlight(midi, true);
+  });
+  window.addEventListener('keyup', (e)=>{
+    const k = e.key.toLowerCase(); const midi = keyMap[k]; if(!midi) return;
+    heldKeys.delete(k);
+    const v = active.get(midi); if(v){ v.stop(); active.delete(midi); }
+    highlight(midi, false);
+  });
+  function highlight(midi, on){ const el = document.querySelector(`[data-midi="${midi}"]`); if(el) el.classList.toggle('active', on); }
+
+  // ---- Controls ----
+  ui.wave.addEventListener('change', ()=>{ ui.waveVal.textContent = ui.wave.value; active.forEach(v=>v.update(settings())); });
+  ui.attack.addEventListener('input', ()=> ui.a.textContent = ui.attack.value);
+  ui.decay.addEventListener('input', ()=> ui.d.textContent = ui.decay.value);
+  ui.sustain.addEventListener('input', ()=> ui.s.textContent = ui.sustain.value);
+  ui.release.addEventListener('input', ()=> ui.r.textContent = ui.release.value);
+  ui.tone.addEventListener('input', ()=>{ ui.t.textContent = ui.tone.value; active.forEach(v=>v.update(settings())); });
+  ui.detune.addEventListener('input', ()=>{ ui.det.textContent = ui.detune.value; active.forEach(v=>v.update(settings())); });
+  ui.volume.addEventListener('input', ()=>{
+    ui.vol.textContent = ui.volume.value;
+    master.gain.setTargetAtTime(Number(ui.volume.value), ctx.currentTime, 0.02);
+  });
+})();
+</script>
+</body>
+</html>

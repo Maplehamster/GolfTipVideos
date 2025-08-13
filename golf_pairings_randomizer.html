@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Golf Pairings Randomizer</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --card:#121922; --muted:#9fb3c8; --text:#e6eef7; --accent:#5ec2ff; --accent2:#38ef7d;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background:linear-gradient(180deg, #0b0f14 0%, #0a0e13 100%); color:var(--text);
+      display:flex; align-items:center; justify-content:center; padding:16px;
+    }
+    .app{width:100%; max-width:680px; background:var(--card); border-radius:20px; padding:18px; box-shadow: 0 10px 30px rgba(0,0,0,0.45);}
+    h1{margin:0 0 8px; font-size: clamp(22px, 5vw, 28px); letter-spacing:.2px}
+    p.caption{margin:4px 0 16px; color:var(--muted); font-size:14px}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    input[type=text]{flex:1; min-width:160px; padding:12px 14px; border-radius:12px; border:1px solid #1f2a36; background:#0f141b; color:var(--text); outline:none}
+    button{appearance:none; border:0; padding:12px 14px; border-radius:12px; color:#081018; font-weight:700; cursor:pointer; transition:transform .05s ease, filter .2s ease;}
+    button:active{transform:translateY(1px)}
+    .btn{background:var(--accent)}
+    .btn.secondary{background:#2bc48a}
+    .btn.ghost{background:#101722; border:1px solid #223142; color:var(--muted)}
+    .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+    .chip{background:#101722; border:1px solid #1f2a36; color:var(--text); padding:8px 10px; border-radius:999px; display:inline-flex; align-items:center; gap:8px}
+    .chip b{font-weight:700}
+    .chip button{background:transparent; color:#9fb3c8; padding:0 4px; border-radius:8px}
+    .actions{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap}
+    .results{margin-top:18px; background:#0f151d; border:1px solid #203040; border-radius:16px; padding:14px}
+    .results h2{margin:0 0 8px; font-size:18px}
+    .group{border:1px dashed #2a3a4d; border-radius:12px; padding:10px; margin:10px 0}
+    .group h3{margin:0 0 6px; font-size:16px}
+    .team{padding:6px 8px; border-radius:8px; background:#0d1320; margin:6px 0; border:1px solid #1e2a3a}
+    .format{margin-top:12px; padding:10px; border-radius:12px; background: #0e1c12; border:1px solid #1f3a2b}
+    .format strong{color:#9ff8c9}
+    .tiny{font-size:12px; color:var(--muted)}
+    .footer{margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#0b1119; border:1px solid #243246; color:#bcd4ee; padding:2px 6px; border-radius:6px; font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Golf Pairings Randomizer">
+    <h1>Golf Pairings Randomizer</h1>
+    <p class="caption">Add up to 8 names. Tap the keyboard <span class="kbd">🎤</span> on iPhone to dictate. Groups are created <em>randomly</em> following your rules.</p>
+
+    <div class="row" aria-label="Add player">
+      <input id="nameInput" type="text" placeholder="Type a name and press Enter" autocomplete="off" />
+      <button class="btn" id="addBtn" aria-label="Add player">Add</button>
+      <button class="btn ghost" id="clearBtn" aria-label="Clear all">Clear</button>
+    </div>
+
+    <div class="chips" id="chips" aria-live="polite"></div>
+
+    <div class="actions">
+      <button class="btn" id="shuffleBtn" aria-label="Shuffle and create groups">Shuffle & Create Groups</button>
+      <button class="btn secondary" id="reshuffleBtn" aria-label="Reshuffle results" disabled>Re‑shuffle</button>
+      <button class="btn ghost" id="shareBtn" aria-label="Share or copy results" disabled>Share/Copy</button>
+    </div>
+
+    <div class="results" id="results" hidden>
+      <h2>Results</h2>
+      <div id="groups"></div>
+      <div class="format" id="formatBox"></div>
+      <div class="footer">
+        <span class="tiny">Uses secure randomness (<code>crypto.getRandomValues</code>) when available.</span>
+        <span class="tiny">Names are saved only in your browser.</span>
+      </div>
+    </div>
+
+    <p class="tiny">Tip: You can paste a comma‑separated list, e.g., "Alex, Bea, Chris, Dana".</p>
+  </div>
+
+<script>
+(function(){
+  const nameInput = document.getElementById('nameInput');
+  const addBtn = document.getElementById('addBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const chips = document.getElementById('chips');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const reshuffleBtn = document.getElementById('reshuffleBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const results = document.getElementById('results');
+  const groupsEl = document.getElementById('groups');
+  const formatBox = document.getElementById('formatBox');
+
+  const LS_KEY = 'golf-randomizer-names-v1';
+  let players = loadNames();
+  renderChips();
+
+  // Utilities
+  function saveNames(){ localStorage.setItem(LS_KEY, JSON.stringify(players)); }
+  function loadNames(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||[] }catch(e){ return [] } }
+
+  function cRandInt(max){
+    // returns integer in [0, max)
+    if(window.crypto && window.crypto.getRandomValues){
+      const array = new Uint32Array(1);
+      window.crypto.getRandomValues(array);
+      return array[0] % max;
+    }
+    return Math.floor(Math.random()*max);
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = cRandInt(i+1);
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function pick(arr){ return arr[cRandInt(arr.length)] }
+
+  // UI helpers
+  function renderChips(){
+    chips.innerHTML = '';
+    players.forEach((name, idx)=>{
+      const el = document.createElement('span');
+      el.className = 'chip';
+      el.innerHTML = `<b>${escapeHtml(name)}</b><button aria-label="Remove ${escapeHtml(name)}" data-i="${idx}">✕</button>`;
+      chips.appendChild(el);
+    });
+    chips.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', e=>{
+      const i = Number(e.currentTarget.getAttribute('data-i'));
+      players.splice(i,1); saveNames(); renderChips(); toggleActionState();
+    }));
+    toggleActionState();
+  }
+
+  function toggleActionState(){
+    const ok = players.length >= 4 && players.length <= 8;
+    shuffleBtn.disabled = !ok;
+  }
+
+  function addName(raw){
+    const names = raw.split(',').map(s=>s.trim()).filter(Boolean);
+    for(const n of names){
+      if(players.length >= 8) break;
+      if(!players.includes(n)) players.push(n);
+    }
+    saveNames(); renderChips(); nameInput.value=''; nameInput.focus();
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+  }
+
+  // Grouping logic per rules
+  function makeGroups(list){
+    const p = shuffle(list);
+    const n = p.length;
+    const out = { groups: [], notes: [] };
+
+    if(n === 8){
+      // 4 teams of 2; choose 2 teams to play each other in first group
+      const teams = [[p[0],p[1]],[p[2],p[3]],[p[4],p[5]],[p[6],p[7]]];
+      const idxs = shuffle([0,1,2,3]);
+      const firstPair = idxs.slice(0,2).sort((a,b)=>a-b);
+      const secondPair = idxs.slice(2,4).sort((a,b)=>a-b);
+      out.groups.push({ title:'Group 1 (off first)', teams:[ teams[firstPair[0]], teams[firstPair[1]] ]});
+      out.groups.push({ title:'Group 2', teams:[ teams[secondPair[0]], teams[secondPair[1]] ]});
+      return out;
+    }
+
+    if(n === 7){
+      // 1 group of 3 (first) + 2 teams of 2 (second)
+      out.groups.push({ title:'Group 1 (off first)', teams:[ [p[0],p[1],p[2]] ]});
+      out.groups.push({ title:'Group 2', teams:[ [p[3],p[4]], [p[5],p[6]] ]});
+      return out;
+    }
+
+    if(n === 6){
+      // 2 groups of 3; choose one to tee off first
+      const g1 = [p[0],p[1],p[2]]; const g2 = [p[3],p[4],p[5]];
+      const first = cRandInt(2)===0 ? g1 : g2;
+      const second = first===g1 ? g2 : g1;
+      out.groups.push({ title:'Group 1 (off first)', teams:[ first ]});
+      out.groups.push({ title:'Group 2', teams:[ second ]});
+      return out;
+    }
+
+    if(n === 5){
+      // one group of 2 first, group of 3 second
+      const firstTwo = [p[0],p[1]]; const nextThree = [p[2],p[3],p[4]];
+      out.groups.push({ title:'Group 1 (off first)', teams:[ firstTwo ]});
+      out.groups.push({ title:'Group 2', teams:[ nextThree ]});
+      return out;
+    }
+
+    if(n === 4){
+      // 2 teams of 2
+      out.groups.push({ title:'Group 1 (off first)', teams:[ [p[0],p[1]] ]});
+      out.groups.push({ title:'Group 2', teams:[ [p[2],p[3]] ]});
+      return out;
+    }
+
+    throw new Error('Please add between 4 and 8 players.');
+  }
+
+  const FORMATS = [
+    'Best Ball',
+    'Reach Back',
+    'Combined',
+    'Best Ball & Reach Back'
+  ];
+
+  function generate(){
+    groupsEl.innerHTML='';
+    const { groups } = makeGroups(players);
+    groups.forEach(g=>{
+      const box = document.createElement('div');
+      box.className='group';
+      box.innerHTML = `<h3>${g.title}</h3>` + g.teams.map(team=>{
+        return `<div class="team">${team.map(escapeHtml).join(' · ')}</div>`
+      }).join('');
+      groupsEl.appendChild(box);
+    });
+
+    const chosen = pick(FORMATS);
+    formatBox.innerHTML = `<strong>Format:</strong> ${chosen}`;
+
+    results.hidden = false;
+    reshuffleBtn.disabled = false; shareBtn.disabled = false;
+
+    // For share/copy text
+    lastShareText = buildShareText(groups, chosen);
+  }
+
+  function buildShareText(groups, format){
+    let s = 'Golf Pairings\n';
+    groups.forEach((g,i)=>{
+      s += `${g.title}:\n`;
+      g.teams.forEach((t,ti)=>{ s += `  ${Array.isArray(t)&&t.length===2?'Team ':''}${ti+1}: ${t.join(', ')}\n`; });
+    });
+    s += `Format: ${format}`;
+    return s;
+  }
+
+  // Events
+  addBtn.addEventListener('click', ()=>{ if(nameInput.value.trim()) addName(nameInput.value.trim()) });
+  nameInput.addEventListener('keydown', e=>{
+    if(e.key==='Enter' && nameInput.value.trim()) addName(nameInput.value.trim());
+  });
+  clearBtn.addEventListener('click', ()=>{ players = []; saveNames(); renderChips(); results.hidden = true; reshuffleBtn.disabled = true; shareBtn.disabled = true; });
+  shuffleBtn.addEventListener('click', generate);
+  reshuffleBtn.addEventListener('click', generate);
+
+  let lastShareText = '';
+  shareBtn.addEventListener('click', async ()=>{
+    try{
+      if(navigator.share){
+        await navigator.share({ title:'Golf Pairings', text:lastShareText });
+      }else if(navigator.clipboard){
+        await navigator.clipboard.writeText(lastShareText);
+        toast('Copied to clipboard');
+      }else{
+        prompt('Copy results:', lastShareText);
+      }
+    }catch(e){ /* user cancelled share */ }
+  });
+
+  function toast(msg){
+    const t = document.createElement('div');
+    t.textContent = msg; t.style.position='fixed'; t.style.bottom='18px'; t.style.left='50%'; t.style.transform='translateX(-50%)'; t.style.padding='10px 14px'; t.style.borderRadius='10px'; t.style.background='#0e1a28'; t.style.border='1px solid #24405e'; t.style.color='#cde6ff'; t.style.fontSize='14px'; t.style.zIndex='9999';
+    document.body.appendChild(t); setTimeout(()=>t.remove(), 1600);
+  }
+})();
+</script>
+</body>
+</html>
