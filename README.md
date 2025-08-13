@@ -1,2 +1,2 @@
 # GolfTipVideos
-Sandpit for ChatGPT Digital Landfill
+ChatGPT Digital Landfill
