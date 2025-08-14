@@ -61,6 +61,7 @@
     <div class="controls">
       <button id="voiceBtn" class="btn">🎙️ Start Voice</button>
       <button id="stopBtn" class="btn secondary">⏹ Stop</button>
+      <button id="nudgeBtn" class="btn secondary">Reply ▶</button>
       <span class="pill" id="rtcStatus">Idle</span>
     </div>
   </header>
@@ -184,6 +185,8 @@ async function startVoice(){
   // 2) Mic permission
   try{
     micStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true }});
+  // Local VAD to auto-trigger replies when you stop speaking
+  startLocalVAD(micStream);
   }catch(e){ addMsg(`Mic permission failed: ${e.message||e}`, "bot"); return; }
 
   // 3) PeerConnection + ensure we receive audio
@@ -291,6 +294,48 @@ function renderCoach(args){
   if (speech) addMsg(speech, "bot");
   if (break_character && tips) addMsg(`Tip: ${tips}`, "bot");
 }
+
+// --- local end-of-speech detector that nudges a reply ---
+let _vadCtx,_vadAnalyser,_vadData,_speaking=false,_lastSound=0,_lastSent=0;
+function startLocalVAD(stream){
+  _vadCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = _vadCtx.createMediaStreamSource(stream);
+  _vadAnalyser = _vadCtx.createAnalyser();
+  _vadAnalyser.fftSize = 1024;
+  _vadData = new Uint8Array(_vadAnalyser.fftSize);
+  src.connect(_vadAnalyser);
+
+  const SILENCE_MS = 400;      // pause length that ends your turn
+  const MIN_GAP_MS = 900;      // cooldown between replies
+  const THRESH = 12;           // lower = more sensitive (8–16 typical)
+
+  function tick(){
+    _vadAnalyser.getByteTimeDomainData(_vadData);
+    let sum=0; for(let i=0;i<_vadData.length;i++){ const v=_vadData[i]-128; sum+=v*v; }
+    const rms = Math.sqrt(sum/_vadData.length);
+    const level = Math.min(100, Math.round((rms/22)*100)); // boost quiet mics
+
+    const now = performance.now();
+    if (level > THRESH) { _speaking = true; _lastSound = now; }
+    else if (_speaking && (now - _lastSound) > SILENCE_MS) {
+      _speaking = false;
+      if (dc && dc.readyState === "open" && (now - _lastSent) > MIN_GAP_MS) {
+        try { dc.send(JSON.stringify({ type: "response.create" })); } catch {}
+        _lastSent = now;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Add click handler for manual nudge
+const nudgeBtn = document.getElementById('nudgeBtn');
+nudgeBtn.addEventListener('click', ()=>{
+  if (dc && dc.readyState === 'open') {
+    dc.send(JSON.stringify({ type: 'response.create' }));
+  }
+});
 
 // default
 setStage("prep");
