@@ -4,16 +4,17 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Leadership Conversation Coach</title>
+<link rel="icon" href="/GolfTipVideos/favicon.svg" type="image/svg+xml">
 <style>
   :root{ --bg:#0f1720; --card:#1b2733; --ink:#e6f0f8; --muted:#9fb3c8; --accent:#3aa675; --line:#233647; --pill:#1a2430; }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui, Segoe UI, Roboto, Arial, sans-serif}
   .wrap{max-width:850px;margin:0 auto;padding:16px 16px 112px}
   header{display:flex;align-items:center;gap:10px;padding:12px 0;flex-wrap:wrap}
   a.home{color:var(--muted);text-decoration:none;border:1px solid #294355;padding:6px 10px;border-radius:10px}
   h1{margin:0;font-size:20px}
   .hint{font-size:12px;color:var(--muted)}
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
   .pill{display:inline-flex;align-items:center;gap:8px;background:var(--pill);border:1px solid #2a3e52;color:var(--muted);padding:6px 10px;border-radius:999px;font-size:13px}
   .btn{background:var(--accent);color:#03150d;border:none;padding:8px 12px;border-radius:12px;font-weight:700;cursor:pointer}
   .btn.secondary{background:#2f4a60;color:#d5e6f2;border:1px solid #355a71}
@@ -33,19 +34,18 @@
   textarea{flex:1;resize:none;background:transparent;border:none;color:var(--ink);height:60px;outline:none;padding:8px}
   audio{display:none}
 </style>
-<link rel="icon" href="/GolfTipVideos/favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="wrap">
   <header>
     <a class="home" href="/GolfTipVideos/index.html">← Home</a>
     <h1>Leadership Conversation Coach</h1>
-    <div class="hint">Pause or stop at any time — say “pause” for tips or “stop” to end the round.</div>
+    <div class="hint">Say “pause” for tips or “stop” to end the round.</div>
 
     <div class="controls" style="width:100%;justify-content:space-between">
       <div class="controls">
         <button id="prepBtn" class="btn secondary">Prep</button>
-        <button id="roleBtn" class="btn secondary">Role-play</button>
+        <button id="roleBtn" class="btn secondary">Role‑play</button>
         <button id="feedBtn" class="btn secondary">Feedback</button>
         <span class="pill"><span>🎯</span> Stage: <strong id="stageLabel">Prep</strong></span>
       </div>
@@ -68,13 +68,13 @@
   <div class="card">
     <div id="messages" class="messages">
       <div class="msg bot">👋 I’m your prep coach. Set the scene: who are you talking to and what’s the topic?</div>
-      <div class="msg bot">Tip: In role-play say “pause” for ideas or “stop” to end the round.</div>
+      <div class="msg bot">Tip: In role‑play say “pause” for ideas or “stop” to end the round.</div>
     </div>
 
     <div class="row">
       <div class="chip" data-insert="Purpose: …  Desired outcome: …">Prompt: Purpose/Outcome</div>
       <div class="chip" data-insert="Difficulty (1–10): …  Pushbacks I expect: …">Prompt: Difficulty</div>
-      <div class="chip" data-insert="Draft opener: “…”  Risks: …  Must-say points: …">Prompt: Openers</div>
+      <div class="chip" data-insert="Draft opener: “…”  Risks: …  Must‑say points: …">Prompt: Openers</div>
     </div>
   </div>
 </div>
@@ -89,11 +89,11 @@
 <audio id="assistantAudio" autoplay></audio>
 
 <script>
-// 🔧 YOUR Worker URL:
-const WORKER_SESSION_URL = "https://voice-ticket.burmans2006.workers.dev/session";
+// ===== CONFIG =====
+const WORKER_SESSION_URL = "https://voice-ticket.burmans2006.workers.dev/session"; // must end with /session
 const REALTIME_URL = "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
 
-// UI refs
+// ===== UI refs =====
 const els = {
   messages: document.getElementById("messages"),
   input: document.getElementById("input"),
@@ -110,18 +110,28 @@ const els = {
   audio: document.getElementById("assistantAudio"),
 };
 
-// Helpers
+// ===== helpers =====
 function addMsg(text, who="bot"){
   const div = document.createElement("div");
-  div.className = `msg ${who}`; div.textContent = text;
+  div.className = `msg ${who}`;
+  div.textContent = text;
   els.messages.appendChild(div);
   els.messages.scrollTop = els.messages.scrollHeight;
 }
-function phaseEnvelope(userText) {
-  return `[phase:${stage}] [difficulty:${els.difficulty.value}] ${userText}`;
+
+function phaseEnvelope(text){
+  return `[phase:${stage}] [difficulty:${els.difficulty.value}] ${text}`;
 }
 
-// Stage state
+// chips quick insert
+Array.from(document.querySelectorAll(".chip")).forEach(c =>
+  c.addEventListener("click", () => {
+    els.input.value = (els.input.value + " " + c.dataset.insert).trim();
+    els.input.focus();
+  })
+);
+
+// ===== Stage state =====
 let stage = "prep";
 function setStage(s){
   stage = s;
@@ -129,74 +139,99 @@ function setStage(s){
   if(s==="prep") els.prep.classList.add("armed");
   if(s==="roleplay") els.role.classList.add("armed");
   if(s==="feedback") els.feed.classList.add("armed");
-  els.stageLabel.textContent = s==="roleplay" ? "Role-play" : s[0].toUpperCase()+s.slice(1);
+  els.stageLabel.textContent = s==="roleplay" ? "Role‑play" : s[0].toUpperCase()+s.slice(1);
   addMsg(`Stage set to ${els.stageLabel.textContent}.`, "bot");
-  // Nudge the next server turn with a tiny reminder
   if (dc && dc.readyState === "open") {
     dc.send(JSON.stringify({ type: "input_text", text: phaseEnvelope("(stage changed)") }));
+    dc.send(JSON.stringify({ type: "response.create" }));
   }
 }
 els.prep.addEventListener("click", ()=>setStage("prep"));
 els.role.addEventListener("click", ()=>setStage("roleplay"));
 els.feed.addEventListener("click", ()=>setStage("feedback"));
-els.difficulty.addEventListener("input", ()=>{ els.diffVal.textContent = els.difficulty.value; });
+els.difficulty.addEventListener("input", ()=> els.diffVal.textContent = els.difficulty.value);
 
-// Chips (quick inserts)
-document.querySelectorAll(".chip").forEach(c =>
-  c.addEventListener("click", () => {
-    els.input.value = (els.input.value + " " + c.dataset.insert).trim();
-    els.input.focus();
-  })
-);
-
-// Realtime voice (WebRTC)
-let pc, dc, micStream;
+// ===== Realtime Voice (WebRTC) =====
+let pc, dc, rxDC, micStream;
 
 async function startVoice(){
   if(pc) return;
   els.rtcStatus.textContent = "Connecting…";
 
-  // Ask Worker for a short-lived session ticket (pinned rules + tool)
-  const sess = await fetch(WORKER_SESSION_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ stage, difficulty: Number(els.difficulty.value) })
-  }).then(r=>r.json()).catch(()=>null);
-
+  // 1) Get ephemeral ticket from your Worker
+  let sess;
+  try{
+    const r = await fetch(WORKER_SESSION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage, difficulty: Number(els.difficulty.value) })
+    });
+    if(!r.ok){
+      const t = await r.text();
+      addMsg(`Ticket error ${r.status}: ${t.slice(0,200)}`, "bot");
+      els.rtcStatus.textContent = "Worker error";
+      return;
+    }
+    sess = await r.json();
+  }catch(e){
+    addMsg(`Ticket fetch failed: ${e.message||e}`, "bot");
+    els.rtcStatus.textContent = "Worker error";
+    return;
+  }
   const EPHEMERAL_KEY = sess?.client_secret?.value;
-  if(!EPHEMERAL_KEY){ els.rtcStatus.textContent = "No session ticket"; return; }
+  if(!EPHEMERAL_KEY){ addMsg("No session ticket from Worker.", "bot"); els.rtcStatus.textContent="No ticket"; return; }
 
-  micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true } });
+  // 2) Mic permission
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true }});
+  }catch(e){ addMsg(`Mic permission failed: ${e.message||e}`, "bot"); return; }
 
+  // 3) PeerConnection + ensure we receive audio
   pc = new RTCPeerConnection();
+  pc.addTransceiver("audio", { direction: "recvonly" });
+
   const inbound = new MediaStream();
   els.audio.srcObject = inbound;
-  pc.ontrack = (e)=> inbound.addTrack(e.track);
-  micStream.getTracks().forEach(t=> pc.addTrack(t, micStream));
+  pc.ontrack = (e)=>{ inbound.addTrack(e.track); els.audio.play().catch(()=>{}); };
   pc.onconnectionstatechange = ()=> els.rtcStatus.textContent = `RTC: ${pc.connectionState}`;
+  pc.ondatachannel = (ev)=>{ rxDC = ev.channel; rxDC.onmessage = (ev2)=> handleOAIEvent(ev2.data); };
 
-  // Data channel for events
+  // add mic (uplink)
+  micStream.getTracks().forEach(t=> pc.addTrack(t, micStream));
+
+  // 4) Data channel we control for instructions + text
   dc = pc.createDataChannel("oai-events");
-  dc.onopen = () => {
-    // Kick off with a short, phase-scoped prompt
+  dc.onopen = ()=>{
     const line =
       stage === "roleplay" ? "Okay, I’ll play the team member. Start when you’re ready."
       : stage === "feedback" ? "Tell me what happened and I’ll give specific feedback."
       : "Let’s prep. What’s your purpose and desired outcome?";
     dc.send(JSON.stringify({ type: "input_text", text: phaseEnvelope(line) }));
+    dc.send(JSON.stringify({ type: "response.create" })); // ensure first reply
     addMsg(line, "bot");
   };
-  dc.onmessage = (ev) => handleOAIEvent(ev.data);
+  dc.onmessage = (ev)=> handleOAIEvent(ev.data);
+  dc.onerror = (e)=> addMsg(`DataChannel error: ${e.message||e}`, "bot");
 
-  // Create offer → send to OpenAI → set answer
-  const offer = await pc.createOffer({ offerToReceiveAudio: true });
+  // 5) Offer/answer with Realtime
+  const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  const answerSDP = await fetch(REALTIME_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${EPHEMERAL_KEY}`, "Content-Type": "application/sdp" },
-    body: offer.sdp
-  }).then(r=>r.text());
-  await pc.setRemoteDescription({ type: "answer", sdp: answerSDP });
+
+  let answerSDP;
+  try{
+    const r = await fetch(REALTIME_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${EPHEMERAL_KEY}`, "Content-Type": "application/sdp" },
+      body: offer.sdp
+    });
+    const text = await r.text();
+    if(!r.ok){ addMsg(`Realtime error ${r.status}: ${text.slice(0,300)}`, "bot"); return; }
+    answerSDP = text;
+  }catch(e){ addMsg(`Realtime request failed: ${e.message||e}`, "bot"); return; }
+
+  try{
+    await pc.setRemoteDescription({ type: "answer", sdp: answerSDP });
+  }catch(e){ addMsg(`Failed to apply remote SDP: ${e.message||e}`, "bot"); }
 }
 
 function stopVoice(){
@@ -208,7 +243,7 @@ function stopVoice(){
 els.voice.addEventListener("click", startVoice);
 els.stop.addEventListener("click", stopVoice);
 
-// Text input alongside voice
+// ===== Text send =====
 function sendText(){
   const text = els.input.value.trim();
   if(!text) return;
@@ -216,6 +251,7 @@ function sendText(){
   els.input.value = "";
   if(dc && dc.readyState === "open"){
     dc.send(JSON.stringify({ type: "input_text", text: phaseEnvelope(text) }));
+    dc.send(JSON.stringify({ type: "response.create" }));
   } else {
     addMsg("(Click ‘Start Voice’ to connect the coach.)", "bot");
   }
@@ -223,65 +259,41 @@ function sendText(){
 els.send.addEventListener("click", sendText);
 els.input.addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendText(); }});
 
-// Robust handler for tool calls (covers several event shapes)
+// ===== Event handling from Realtime =====
+let accFunc = null;
 function handleOAIEvent(raw){
   let msg; try { msg = JSON.parse(raw); } catch { return; }
 
-  // 1) Direct tool call (simple case)
-  if (msg.type === "tool_call" && msg.name === "coach_emit") {
-    renderCoach(msg.arguments);
-    return;
-  }
-
-  // 2) Realtime "response.function_call" shape
-  if (msg.type === "response.function_call" && msg.name === "coach_emit") {
-    const args = safeParseJSON(msg.arguments);
-    renderCoach(args);
-    return;
-  }
-
-  // 3) Some versions stream function tool as deltas; we accumulate
+  // direct tool call
+  if (msg.type === "tool_call" && msg.name === "coach_emit") { renderCoach(msg.arguments); return; }
+  // function_call shape
+  if (msg.type === "response.function_call" && msg.name === "coach_emit") { renderCoach(safeJSON(msg.arguments)); return; }
+  // streamed function args
   if (msg.type === "response.delta" && msg.delta?.type === "function_call") {
     accFunc = accFunc || { name: msg.delta.name, argsText: "" };
     if (msg.delta.arguments) accFunc.argsText += msg.delta.arguments;
     return;
   }
-  if (msg.type === "response.message.completed" && accFunc?.name === "coach_emit") {
-    const args = safeParseJSON(accFunc.argsText);
-    accFunc = null;
-    renderCoach(args);
-    return;
-  }
+  if (msg.type === "response.message.completed" && accFunc?.name === "coach_emit") { renderCoach(safeJSON(accFunc.argsText)); accFunc=null; return; }
 
-  // 4) Plain text fallback (shouldn't happen because of tool-only rule, but keep it friendly)
+  // plain text fallback
   if (msg.type === "response.output_text") {
     const t = Array.isArray(msg.text) ? msg.text.join("") : String(msg.text || "");
     if (t.trim()) addMsg(t.trim(), "bot");
-    return;
   }
-
-  // Uncomment to debug unknown events:
-  // console.log("OAI EVT:", msg);
 }
-let accFunc = null;
+function safeJSON(s){ try{ return JSON.parse(s) }catch{ return null } }
 
-function safeParseJSON(s) {
-  try { return JSON.parse(s); } catch { return null; }
-}
-function renderCoach(args) {
+function renderCoach(args){
   if (!args) return;
   const { phase, speech, break_character, tips } = args;
-  if (phase && ["prep","roleplay","feedback"].includes(phase)) {
-    // keep UI in sync if model transitions
-    setStage(phase);
-  }
+  if (phase && ["prep","roleplay","feedback"].includes(phase)) setStage(phase);
   if (speech) addMsg(speech, "bot");
   if (break_character && tips) addMsg(`Tip: ${tips}`, "bot");
 }
 
-// Default stage
+// default
 setStage("prep");
 </script>
 </body>
 </html>
-
