@@ -40,12 +40,12 @@
   <header>
     <a class="home" href="/GolfTipVideos/index.html">← Home</a>
     <h1>Leadership Conversation Coach</h1>
-    <div class="hint">Pause or stop at any time — you can ask me for tips and advice, or just take a break.</div>
+    <div class="hint">Pause or stop at any time — say “pause” for tips or “stop” to end the round.</div>
 
     <div class="controls" style="width:100%;justify-content:space-between">
       <div class="controls">
         <button id="prepBtn" class="btn secondary">Prep</button>
-        <button id="roleBtn" class="btn secondary">Role‑play</button>
+        <button id="roleBtn" class="btn secondary">Role-play</button>
         <button id="feedBtn" class="btn secondary">Feedback</button>
         <span class="pill"><span>🎯</span> Stage: <strong id="stageLabel">Prep</strong></span>
       </div>
@@ -68,13 +68,13 @@
   <div class="card">
     <div id="messages" class="messages">
       <div class="msg bot">👋 I’m your prep coach. Set the scene: who are you talking to and what’s the topic?</div>
-      <div class="msg bot">Tip: In role‑play say “pause” for ideas or “stop” to end the round.</div>
+      <div class="msg bot">Tip: In role-play say “pause” for ideas or “stop” to end the round.</div>
     </div>
 
     <div class="row">
       <div class="chip" data-insert="Purpose: …  Desired outcome: …">Prompt: Purpose/Outcome</div>
       <div class="chip" data-insert="Difficulty (1–10): …  Pushbacks I expect: …">Prompt: Difficulty</div>
-      <div class="chip" data-insert="Draft opener: “…”  Risks: …  Must‑say points: …">Prompt: Openers</div>
+      <div class="chip" data-insert="Draft opener: “…”  Risks: …  Must-say points: …">Prompt: Openers</div>
     </div>
   </div>
 </div>
@@ -89,10 +89,11 @@
 <audio id="assistantAudio" autoplay></audio>
 
 <script>
-// 🔧 CHANGE THIS ONE LINE:
-const WORKER_SESSION_URL = "https://voice-ticket.burmans2006.workers.dev/session"; // ← your Worker URL from step 1
+// 🔧 YOUR Worker URL:
+const WORKER_SESSION_URL = "https://your-worker-subdomain.workers.dev/session";
 const REALTIME_URL = "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
 
+// UI refs
 const els = {
   messages: document.getElementById("messages"),
   input: document.getElementById("input"),
@@ -108,14 +109,19 @@ const els = {
   diffVal: document.getElementById("diffVal"),
   audio: document.getElementById("assistantAudio"),
 };
+
+// Helpers
 function addMsg(text, who="bot"){
   const div = document.createElement("div");
   div.className = `msg ${who}`; div.textContent = text;
   els.messages.appendChild(div);
   els.messages.scrollTop = els.messages.scrollHeight;
 }
+function phaseEnvelope(userText) {
+  return `[phase:${stage}] [difficulty:${els.difficulty.value}] ${userText}`;
+}
 
-// Stage & difficulty (sent live to the voice chat)
+// Stage state
 let stage = "prep";
 function setStage(s){
   stage = s;
@@ -123,23 +129,40 @@ function setStage(s){
   if(s==="prep") els.prep.classList.add("armed");
   if(s==="roleplay") els.role.classList.add("armed");
   if(s==="feedback") els.feed.classList.add("armed");
-  els.stageLabel.textContent = s==="roleplay" ? "Role‑play" : s[0].toUpperCase()+s.slice(1);
+  els.stageLabel.textContent = s==="roleplay" ? "Role-play" : s[0].toUpperCase()+s.slice(1);
   addMsg(`Stage set to ${els.stageLabel.textContent}.`, "bot");
-  sendSessionUpdate(true);
+  // Nudge the next server turn with a tiny reminder
+  if (dc && dc.readyState === "open") {
+    dc.send(JSON.stringify({ type: "input_text", text: phaseEnvelope("(stage changed)") }));
+  }
 }
 els.prep.addEventListener("click", ()=>setStage("prep"));
 els.role.addEventListener("click", ()=>setStage("roleplay"));
 els.feed.addEventListener("click", ()=>setStage("feedback"));
-els.difficulty.addEventListener("input", ()=>{ els.diffVal.textContent = els.difficulty.value; sendSessionUpdate(true); });
+els.difficulty.addEventListener("input", ()=>{ els.diffVal.textContent = els.difficulty.value; });
 
-// Realtime voice (WebRTC) — just click Start Voice and allow the mic
+// Chips (quick inserts)
+document.querySelectorAll(".chip").forEach(c =>
+  c.addEventListener("click", () => {
+    els.input.value = (els.input.value + " " + c.dataset.insert).trim();
+    els.input.focus();
+  })
+);
+
+// Realtime voice (WebRTC)
 let pc, dc, micStream;
+
 async function startVoice(){
   if(pc) return;
   els.rtcStatus.textContent = "Connecting…";
 
-  // Get a short-lived ticket from your Worker
-  const sess = await fetch(WORKER_SESSION_URL).then(r=>r.json());
+  // Ask Worker for a short-lived session ticket (pinned rules + tool)
+  const sess = await fetch(WORKER_SESSION_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage, difficulty: Number(els.difficulty.value) })
+  }).then(r=>r.json()).catch(()=>null);
+
   const EPHEMERAL_KEY = sess?.client_secret?.value;
   if(!EPHEMERAL_KEY){ els.rtcStatus.textContent = "No session ticket"; return; }
 
@@ -152,8 +175,18 @@ async function startVoice(){
   micStream.getTracks().forEach(t=> pc.addTrack(t, micStream));
   pc.onconnectionstatechange = ()=> els.rtcStatus.textContent = `RTC: ${pc.connectionState}`;
 
-  // Data channel for sending simple text/updates
+  // Data channel for events
   dc = pc.createDataChannel("oai-events");
+  dc.onopen = () => {
+    // Kick off with a short, phase-scoped prompt
+    const line =
+      stage === "roleplay" ? "Okay, I’ll play the team member. Start when you’re ready."
+      : stage === "feedback" ? "Tell me what happened and I’ll give specific feedback."
+      : "Let’s prep. What’s your purpose and desired outcome?";
+    dc.send(JSON.stringify({ type: "input_text", text: phaseEnvelope(line) }));
+    addMsg(line, "bot");
+  };
+  dc.onmessage = (ev) => handleOAIEvent(ev.data);
 
   // Create offer → send to OpenAI → set answer
   const offer = await pc.createOffer({ offerToReceiveAudio: true });
@@ -164,104 +197,90 @@ async function startVoice(){
     body: offer.sdp
   }).then(r=>r.text());
   await pc.setRemoteDescription({ type: "answer", sdp: answerSDP });
-
-  // Send an initial hello that matches the current stage
-  sendSessionUpdate(true);
 }
+
 function stopVoice(){
   if(pc){ pc.close(); pc=null; }
   if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
   els.rtcStatus.textContent = "Stopped";
 }
+
 els.voice.addEventListener("click", startVoice);
 els.stop.addEventListener("click", stopVoice);
 
-function sendSessionUpdate(withGreeting=false) {
-  if (!dc || dc.readyState !== "open") return;
-
-  const diff = Number(els.difficulty.value);
-
-  const instr = `
-You are a leadership conversation training tool that helps leaders prepare for and practice challenging conversations with team members. 
-You speak English at all times. 
-You work in three phases:
-
-Beginning – Set the Scene:
-Greet the leader and ask them to set the scene: Who are you talking to? What is the conversation about?
-Once you have the basics, move into Phase 1.
-
-Phase 1 – Preparation Coach:
-Help the leader clarify: The purpose of the conversation. The desired outcome. 
-Ask one question at a time, letting them answer before moving on. Use probing questions to explore:
-- Why the conversation is important
-- What they want the team member to understand or commit to
-- Possible positive resolutions
-When they say "end prep", move to Phase 2.
-
-Phase 2 – Role Play (Team Member Persona):
-Ask for difficulty level (1 = super agreeable, 10 = combative and aggressive). 
-Ask about specific pushbacks, excuses, or behaviours to include. 
-Then fully role-play the team member, matching the given difficulty and behaviours. 
-End when told, or when the conversation reaches a natural close. 
-If they say "pause" or "stop", break character and ask if they’d like suggestions before resuming.
-
-Phase 3 – Feedback:
-Give 2–3 things they did well (specific and encouraging).
-Give 1–3 suggestions for improvement, including missed opportunities or alternative approaches.
-Ask: "Would you like another go?" and "Would you like me to change anything for next time?"
-
-General Rules:
-- Speak English at all times
-- Never break character in Phase 2 unless told
-- Follow these instructions exactly
-- Difficulty level: ${diff}/10
-`;
-
-  dc.send(JSON.stringify({
-    type: "session.update",
-    session: {
-      instructions: instr,
-      voice: "alloy",              // keep Alloy, or change to other voice name
-      modalities: ["text", "audio"],
-      input_language: "en"         // FORCE English input/output
-    }
-  }));
-
-  if (withGreeting) {
-    const line =
-      stage === "roleplay"
-        ? "Okay, I’ll play the team member. Start when you’re ready."
-        : stage === "feedback"
-        ? "Tell me what happened and I’ll give specific feedback."
-        : "Let’s prep. What’s your purpose and desired outcome?";
-    dc.send(JSON.stringify({ type: "input_text", text: line }));
-    addMsg(line, "bot");
-  }
-}
-
-// Text still works alongside voice
+// Text input alongside voice
 function sendText(){
   const text = els.input.value.trim();
   if(!text) return;
   addMsg(text, "you");
   els.input.value = "";
   if(dc && dc.readyState === "open"){
-    dc.send(JSON.stringify({ type: "input_text", text }));
-  }else{
+    dc.send(JSON.stringify({ type: "input_text", text: phaseEnvelope(text) }));
+  } else {
     addMsg("(Click ‘Start Voice’ to connect the coach.)", "bot");
   }
 }
 els.send.addEventListener("click", sendText);
 els.input.addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendText(); }});
 
+// Robust handler for tool calls (covers several event shapes)
+function handleOAIEvent(raw){
+  let msg; try { msg = JSON.parse(raw); } catch { return; }
+
+  // 1) Direct tool call (simple case)
+  if (msg.type === "tool_call" && msg.name === "coach_emit") {
+    renderCoach(msg.arguments);
+    return;
+  }
+
+  // 2) Realtime "response.function_call" shape
+  if (msg.type === "response.function_call" && msg.name === "coach_emit") {
+    const args = safeParseJSON(msg.arguments);
+    renderCoach(args);
+    return;
+  }
+
+  // 3) Some versions stream function tool as deltas; we accumulate
+  if (msg.type === "response.delta" && msg.delta?.type === "function_call") {
+    accFunc = accFunc || { name: msg.delta.name, argsText: "" };
+    if (msg.delta.arguments) accFunc.argsText += msg.delta.arguments;
+    return;
+  }
+  if (msg.type === "response.message.completed" && accFunc?.name === "coach_emit") {
+    const args = safeParseJSON(accFunc.argsText);
+    accFunc = null;
+    renderCoach(args);
+    return;
+  }
+
+  // 4) Plain text fallback (shouldn't happen because of tool-only rule, but keep it friendly)
+  if (msg.type === "response.output_text") {
+    const t = Array.isArray(msg.text) ? msg.text.join("") : String(msg.text || "");
+    if (t.trim()) addMsg(t.trim(), "bot");
+    return;
+  }
+
+  // Uncomment to debug unknown events:
+  // console.log("OAI EVT:", msg);
+}
+let accFunc = null;
+
+function safeParseJSON(s) {
+  try { return JSON.parse(s); } catch { return null; }
+}
+function renderCoach(args) {
+  if (!args) return;
+  const { phase, speech, break_character, tips } = args;
+  if (phase && ["prep","roleplay","feedback"].includes(phase)) {
+    // keep UI in sync if model transitions
+    setStage(phase);
+  }
+  if (speech) addMsg(speech, "bot");
+  if (break_character && tips) addMsg(`Tip: ${tips}`, "bot");
+}
+
 // Default stage
 setStage("prep");
 </script>
 </body>
 </html>
-
-
-
-
-
-
