@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shopping List</title>
+<style>
+  :root{
+    --bg:#f6f7f9;
+    --ink:#222;
+    --muted:#6b7280;
+    /* Pastel palette */
+    --p1:#fbe3e8; --p2:#fdecc8; --p3:#e9f6d0; --p4:#dff3ff; --p5:#efe3ff; --p6:#ffe8f0; --p7:#e8f1ff; --p8:#e9fff3; --p9:#fff6d6;
+    --accent:#28a745;
+  }
+  * { box-sizing: border-box; }
+  body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+  header{ position:sticky; top:0; z-index:2; background:linear-gradient(#ffffffcc,#ffffffcc); backdrop-filter: blur(4px); padding:14px 16px; border-bottom:1px solid #e5e7eb; }
+  h1{ margin:0; font-size:1.1rem; }
+
+  /* Grid of item cards */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px,1fr));
+    gap:10px; padding:12px;
+  }
+  .card{
+    background:#fff; border-radius:14px; padding:10px; text-align:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.06);
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    border:2px solid transparent;
+  }
+  .card.selected{
+    border-color:var(--accent);
+    transform: translateY(-2px) scale(1.03);
+    box-shadow:0 8px 18px rgba(40,167,69,.18);
+  }
+  .thumb{
+    width:72px; height:72px; margin:2px auto 8px; border-radius:18px;
+    display:grid; place-items:center; font-size:36px; user-select:none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -6px 12px rgba(0,0,0,.04);
+  }
+  .name{ font-size:.92rem; color:#111; line-height:1.15; }
+  .muted{ color:var(--muted); font-size:.85rem; }
+
+  .toolbar{ position:sticky; bottom:0; z-index:2; padding:12px; background:linear-gradient(#ffffffcc,#ffffffcc); backdrop-filter: blur(4px); border-top:1px solid #e5e7eb; }
+  .btn{
+    width:100%; padding:14px 16px; border:0; border-radius:12px; font-size:1rem; color:#fff; background:var(--accent);
+    box-shadow: 0 10px 20px rgba(40,167,69,.22);
+    cursor:pointer;
+  }
+
+  /* List screen (full-screen) */
+  .screen{ display:none; min-height:100dvh; }
+  .screen.active{ display:block; }
+  #pickScreen.active{ display:block; }
+  #pickScreen{ display:block; }
+
+  .listHeader{ position:sticky; top:0; background:#fff; border-bottom:1px solid #eee; padding:12px; display:flex; gap:8px; align-items:center; }
+  .back{ appearance:none; border:1px solid #e5e7eb; background:#f8fafc; padding:8px 12px; border-radius:10px; cursor:pointer; }
+  .groups{ padding:12px; }
+  .group{ background:#fff; border-radius:14px; padding:12px; margin:10px 0; box-shadow:0 2px 6px rgba(0,0,0,.05); }
+  .group h2{ margin:0 0 8px; font-size:1rem; }
+  .group ul{ margin:0; padding-left:18px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<!-- Picker screen -->
+<section id="pickScreen" class="screen active">
+  <header><h1>🛒 Tap items to add</h1><div class="muted">Pastel, consistent style — works great on phone</div></header>
+  <div id="grid" class="grid"></div>
+  <div class="toolbar"><button class="btn" id="shopBtn">Let’s Shop</button></div>
+</section>
+
+<!-- List screen -->
+<section id="listScreen" class="screen">
+  <div class="listHeader">
+    <button class="back" id="backBtn">← Back</button>
+    <strong>Your List</strong>
+  </div>
+  <div class="groups" id="groups"></div>
+</section>
+
+<script>
+/* --- Data -------------------------------------------------------------- */
+const CATEGORIES = {
+  1: "Bread, fruit, veg",
+  2: "Meat and deli",
+  3: "Cereals, spreads",
+  4: "Confectionery, chocolate, etc",
+  5: "Stocks, pasta, rice, tinned veg, international foods",
+  6: "Dog food, cleaning products, paper towels, toilet paper",
+  7: "Dairy",
+  8: "Frozen",
+  9: "Health"
+};
+
+// Item list (capitalised + categories)
+const ITEMS = [
+  ["Bacon",2], ["Bananas",1], ["Beef Mince",2], ["Beef Stock",5], ["Branston",3], ["Broccoli",1],
+  ["Butter",7], ["Capsicums",1], ["Chicken",2], ["Chicken Stock",5], ["Chocolate",4], ["Coriander",1],
+  ["Cream",7], ["Dunc's Cereal",3], ["Dog Food",6], ["Feta",7], ["Frozen Veg",8], ["Garlic",1],
+  ["Ginger",1], ["Green Beans",1], ["Ham",2], ["Ice Cream",8], ["Kumara",1], ["Leeks",1], ["Lemons",1],
+  ["Limes",1], ["Marmalade",3], ["Marmite",3], ["Milk",7], ["Onions",1], ["Paper Towels",6], ["Parsley",1],
+  ["Peanut Butter",3], ["Pork Mince",2], ["Potatoes",1], ["Regular Cheese",7], ["Salad",1], ["Shell's Cereal",3],
+  ["Spinach",1], ["Steak",2], ["Thyme",1], ["Tinned Beans",5], ["Tinned Tomatoes",5], ["Toilet Paper",6],
+  ["Tomatoes",1], ["Toothpaste",9], ["Vogel Bread",1], ["Cherry Tomatoes",1], ["Zucchini",1] // (a.k.a. courgettes)
+].map(([name,cat])=>({name, cat}));
+
+/* Emoji mapping for pastel thumbnails (consistent look) */
+const EMOJI = {
+  "Bacon":"🥓", "Bananas":"🍌", "Beef Mince":"🥩", "Beef Stock":"🧂",
+  "Branston":"🫙", "Broccoli":"🥦", "Butter":"🧈", "Capsicums":"🫑",
+  "Chicken":"🍗", "Chicken Stock":"🧂", "Chocolate":"🍫", "Coriander":"🌿",
+  "Cream":"🥛", "Dunc's Cereal":"🥣", "Dog Food":"🦴", "Feta":"🧀",
+  "Frozen Veg":"🥶", "Garlic":"🧄", "Ginger":"🫚", "Green Beans":"🫛",
+  "Ham":"🍖", "Ice Cream":"🍨", "Kumara":"🍠", "Leeks":"🧅",
+  "Lemons":"🍋", "Limes":"🍈", "Marmalade":"🫙", "Marmite":"🫙",
+  "Milk":"🥛", "Onions":"🧅", "Paper Towels":"🧻", "Parsley":"🌿",
+  "Peanut Butter":"🥜", "Pork Mince":"🥩", "Potatoes":"🥔", "Regular Cheese":"🧀",
+  "Salad":"🥗", "Shell's Cereal":"🥣", "Spinach":"🥬", "Steak":"🥩",
+  "Thyme":"🌿", "Tinned Beans":"🫘", "Tinned Tomatoes":"🍅", "Toilet Paper":"🧻",
+  "Tomatoes":"🍅", "Toothpaste":"🪥", "Vogel Bread":"🍞", "Cherry Tomatoes":"🍅",
+  "Zucchini":"🥒"
+};
+
+/* Pastel bg cycle */
+const PASTELS = ['--p1','--p2','--p3','--p4','--p5','--p6','--p7','--p8','--p9'];
+
+/* --- Render picker grid ------------------------------------------------ */
+const grid = document.getElementById('grid');
+const selected = new Set();
+
+ITEMS.sort((a,b)=> a.name.localeCompare(b.name,'en',{sensitivity:'base'}));
+
+function makeCard(item, idx){
+  const bg = getComputedStyle(document.documentElement).getPropertyValue(PASTELS[idx % PASTELS.length]).trim();
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.dataset.name = item.name;
+
+  const emoji = EMOJI[item.name] || '🛒';
+  div.innerHTML = `
+    <div class="thumb" style="background:${bg}">
+      <span aria-hidden="true">${emoji}</span>
+    </div>
+    <div class="name">${item.name}</div>
+  `;
+  div.addEventListener('click', ()=>{
+    div.classList.toggle('selected');
+    if(selected.has(item.name)) selected.delete(item.name); else selected.add(item.name);
+  });
+  return div;
+}
+
+ITEMS.forEach((it,i)=> grid.appendChild(makeCard(it,i)));
+
+/* --- List screen logic ------------------------------------------------- */
+const shopBtn  = document.getElementById('shopBtn');
+const backBtn  = document.getElementById('backBtn');
+const pickScr  = document.getElementById('pickScreen');
+const listScr  = document.getElementById('listScreen');
+const groupsEl = document.getElementById('groups');
+
+shopBtn.addEventListener('click', ()=>{
+  // Build groups in supermarket order (1..9)
+  const byCat = new Map(Object.keys(CATEGORIES).map(k=>[+k,[]]));
+  for(const name of Array.from(selected.values()).sort()){
+    const item = ITEMS.find(i=>i.name===name);
+    if(!item) continue;
+    byCat.get(item.cat).push(name);
+  }
+  // Render
+  groupsEl.innerHTML = '';
+  for(let c=1;c<=9;c++){
+    const arr = byCat.get(c);
+    if(!arr || !arr.length) continue;
+    const g = document.createElement('div');
+    g.className='group';
+    g.innerHTML = `<h2>${CATEGORIES[c]}</h2>
+      <ul>${arr.map(n=>`<li>${n}</li>`).join('')}</ul>`;
+    groupsEl.appendChild(g);
+  }
+  // Switch to list-only view
+  pickScr.classList.remove('active');
+  listScr.classList.add('active');
+  window.scrollTo({top:0, behavior:'instant'});
+});
+
+backBtn.addEventListener('click', ()=>{
+  listScr.classList.remove('active');
+  pickScr.classList.add('active');
+});
+</script>
+</body>
+</html>
