@@ -204,7 +204,7 @@ If they want changes, adjust your approach accordingly for the next roleplay.
 General Rules:
 Ask one question at a time. Never break character in Phase 2 unless told to.
 Keep clarifications short and to the point. Follow all instructions in order and adapt to the leader’s feedback."   
-  dc.send(JSON.stringify({ type: "session.update", session: { instructions: instr, voice: "verse" }}));
+  dc.send(JSON.stringify({ type: "session.update", session: { instructions: instr, voice: "alloy" }}));
   if(withGreeting){
     const line = stage==="roleplay" ? "Okay, I’ll play the team member. Start when you’re ready."
       : stage==="feedback" ? "Tell me what happened and I’ll give specific feedback."
@@ -234,6 +234,7 @@ setStage("prep");
 </script>
 </body>
 </html>
+
 
 
 
