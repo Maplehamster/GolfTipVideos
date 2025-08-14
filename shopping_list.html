@@ -1,286 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Shopping List</title>
-<style>
-  :root{
-    --bg:#26323a;           /* dark gunmetal */
-    --ink:#eef2f6;          /* light text */
-    --muted:#a7b1bb;        /* dim text */
-    --card:#e2e8f0;         /* mid-light grey card */
-    --card-ink:#1f2937;     /* dark text on card */
-    --accent:#22c55e;       /* light blue border when selected */
-    --cta:#22c55e;          /* green CTA */
-
-    /* Pastel badge backgrounds (for emoji icons) */
-    --p1:#fbe3e8; --p2:#fdecc8; --p3:#e9f6d0; --p4:#dff3ff; --p5:#efe3ff;
-    --p6:#ffe8f0; --p7:#e8f1ff; --p8:#e9fff3; --p9:#fff6d6;
-  }
-  *{ box-sizing:border-box; }
-  body{ margin:0; font-family:system-ui,-apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--ink); }
-
-  /* Header with Home */
-  header{
-    position:sticky; top:0; z-index:3;
-    display:flex; align-items:center; gap:10px; justify-content:space-between;
-    padding:12px; background:rgba(19,28,34,.9); backdrop-filter: blur(6px);
-    border-bottom:1px solid rgba(255,255,255,.08);
-  }
-  .home{
-    color:var(--ink); text-decoration:none; font-weight:600;
-    padding:8px 12px; border-radius:10px; background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.15);
-  }
-  h1{ margin:0; font-size:1.05rem; }
-
-  /* Controls: add custom item */
-  .controls{
-    display:flex; gap:8px; padding:10px 12px; align-items:center; flex-wrap:wrap;
-    background:rgba(255,255,255,.04);
-    border-bottom:1px solid rgba(255,255,255,.06);
-  }
-  input[type="text"], select{
-    background:#1f2a31; color:var(--ink);
-    border:1px solid rgba(255,255,255,.15);
-    border-radius:10px; padding:10px 12px; min-width:180px; outline:none;
-  }
-  .addBtn{
-    border:0; background:#3b82f6; color:#fff; padding:10px 14px; border-radius:10px; cursor:pointer;
-  }
-
-  /* Grid */
-  .grid{
-    display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr));
-    gap:10px; padding:12px;
-  }
-  .item{
-    background:var(--card); color:var(--card-ink);
-    border-radius:14px; padding:10px; text-align:center;
-    box-shadow:0 2px 6px rgba(0,0,0,.25);
-    cursor:pointer; border:2px solid transparent;
-    transition: transform .15s, border-color .15s, box-shadow .15s;
-  }
-  .item.selected{
-    border-color:var(--accent);
-    transform: translateY(-2px) scale(1.03);
-    box-shadow:0 10px 20px rgba(30,144,255,.25);
-  }
-
-  /* Emoji badge (thumbnail) */
-  .thumb{
-    width:72px; height:72px; margin:2px auto 8px; border-radius:18px;
-    display:grid; place-items:center; font-size:36px; user-select:none;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -6px 12px rgba(0,0,0,.08);
-  }
-  .name{ font-size:.92rem; }
-
-  /* Floating CTA */
-  .ctaWrap{
-    position:fixed; left:0; right:0; bottom:0; z-index:4;
-    padding:12px; background:linear-gradient(transparent, rgba(19,28,34,.9) 40%);
-  }
-  .btn{
-    width:min(680px, 92vw); margin:0 auto; display:block;
-    padding:16px 18px; border:0; border-radius:14px; font-size:1.05rem; color:#fff; background:var(--cta);
-    box-shadow: 0 14px 28px rgba(34,197,94,.28); cursor:pointer;
-  }
-
-  /* List screen (only this shows after Let's Shop) */
-  .list-screen{ display:none; min-height:100dvh; }
-  .list-screen.active{ display:block; }
-  .back-btn{
-    appearance:none; border:1px solid rgba(255,255,255,.2); background:#1f2a31; color:var(--ink);
-    padding:8px 12px; border-radius:10px; cursor:pointer; margin:12px;
-  }
-  .category{
-    background:#1f2a31; border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:12px; margin:10px 12px;
-  }
-  .category h2{ margin:0 0 8px; font-size:1rem; color:#d8dee4; }
-  .category ul{ margin:0; padding-left:18px; line-height:1.6; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Let's Shop</title>
+  <style>
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#1f2a30; color:#fff; }
+    h1 { text-align:center; padding:1em; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(90px,1fr)); gap:10px; padding:10px; }
+    .item { background:#e2e8f0; color:#1f2937; border-radius:10px; padding:8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.25); cursor:pointer; transition:transform .2s, background-color .2s; }
+    .item.selected { background-color:#AFE1AF; transform:scale(1.05); }
+    .thumb { width:56px; height:56px; margin:2px auto 6px; font-size:30px; display:grid; place-items:center; background:#f5f7fa; border-radius:12px; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -6px 12px rgba(0,0,0,.06); }
+    .button-wrapper { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); z-index:10; display:flex; gap:10px; }
+    button { padding:1em 1.4em; font-size:1em; background:#22c55e; color:#fff; border:none; border-radius:8px; cursor:pointer; }
+    .home-btn { background:#3b82f6; }
+    .back-btn { background:#555; margin-bottom:1em; }
+    .list-screen { display:none; padding:1em; }
+    .category { margin-bottom:1em; }
+    .category h2 { margin-bottom:.5em; }
+    .add-item { display:flex; justify-content:center; gap:6px; margin:10px; }
+    .add-item input { padding:.5em; font-size:1em; }
+  </style>
 </head>
 <body>
-
-<!-- PICKER SCREEN -->
-<section id="pickScreen">
-  <header>
-    <a class="home" href="index.html">Home</a>
-    <h1>🛒 Tap items to add</h1>
-    <span></span>
-  </header>
-
-  <div class="controls">
-    <input id="customName" type="text" placeholder="Add custom item…" />
-    <select id="customCat"></select>
-    <button class="addBtn" id="addBtn">Add</button>
+  <h1>🛒 Tap to Add to List</h1>
+  <div class="add-item">
+    <input type="text" id="newItem" placeholder="Add item..." />
+    <button onclick="addNewItem()">Add</button>
   </div>
 
   <div class="grid" id="itemGrid"></div>
 
-  <!-- Floating CTA always visible until clicked -->
-  <div id="cta" class="ctaWrap">
-    <button class="btn" id="shopBtn">Let’s Shop</button>
+  <div class="button-wrapper">
+    <button onclick="showList()">Let's Shop</button>
+    <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
   </div>
-</section>
 
-<!-- LIST SCREEN (only list + back button visible) -->
-<section class="list-screen" id="listScreen">
-  <button class="back-btn" onclick="goBack()">⬅ Back</button>
-  <div id="finalList"></div>
-</section>
+  <div class="list-screen" id="listScreen">
+    <button class="back-btn" onclick="goBack()">⬅ Back</button>
+    <div id="finalList"></div>
+  </div>
 
-<script>
-  /* Supermarket order */
-  const categories = {
-    1: "Bread, fruit, veg",
-    2: "Meat and deli",
-    3: "Cereals, spreads",
-    4: "Confectionery, chocolate etc",
-    5: "Stocks, pasta, rice, tinned veg, international foods",
-    6: "Dog food, cleaning products, paper towels, toilet paper",
-    7: "Dairy",
-    8: "Frozen",
-    9: "Health"
-  };
-
-  /* Emoji icon mapping */
-  const EMOJI = {
-    "Bacon":"🥓","Bananas":"🍌","Beef Mince":"🥩","Beef Stock":"🧂",
-    "Branston":"🫙","Broccoli":"🥦","Burger Sauce":"🍔","Butter":"🧈",
-    "Capsicums":"🫑","Cherry Tomatoes":"🍅","Chicken":"🍗","Chicken Stock":"🧂",
-    "Chocolate":"🍫","Coriander":"🌿","Cream":"🥛","Dunc's Cereal":"🥣",
-    "Dog Food":"🦴","Feta":"🧀","Frozen Veg":"🥶","Garlic":"🧄",
-    "Garlic Powder":"🧄","Ginger":"🫚","Green Beans":"🫛","Ham":"🍖",
-    "Ice Cream":"🍨","Kumara":"🍠","Leeks":"🧅","Lemons":"🍋",
-    "Limes":"🍈","Marmalade":"🫙","Marmite":"🫙","Mayonnaise":"🧴",
-    "Milk":"🥛","Mushrooms":"🍄","Onion Powder":"🧅","Onions":"🧅",
-    "Oxo Cubes":"🧂","Oyster Sauce":"🧴","Paper Towels":"🧻","Paprika":"🌶️",
-    "Parsley":"🌿","Peanut Butter":"🥜","Pork Mince":"🥩","Potatoes":"🥔",
-    "Regular Cheese":"🧀","Salad":"🥗","Shell's Cereal":"🥣","Soy Sauce":"🍶",
-    "Spinach":"🥬","Steak":"🥩","Thyme":"🌿","Tinned Beans":"🫘",
-    "Tinned Tomatoes":"🍅","Toilet Paper":"🧻","Tomato Sauce":"🍅","Tomatoes":"🍅",
-    "Toothpaste":"🪥","Vogel Bread":"🍞","Zucchini":"🥒","Bread":"🍞"
-  };
-
-  /* Items (with new additions) */
-  const items = [
-    { name: "Bacon", category: 2 }, { name: "Bananas", category: 1 }, { name: "Beef Mince", category: 2 }, { name: "Beef Stock", category: 5 },
-    { name: "Branston", category: 3 }, { name: "Bread", category: 1 }, { name: "Broccoli", category: 1 }, { name: "Burger Sauce", category: 5 },
-    { name: "Butter", category: 7 }, { name: "Capsicums", category: 1 }, { name: "Cherry Tomatoes", category: 1 }, { name: "Chicken", category: 2 },
-    { name: "Chicken Stock", category: 5 }, { name: "Chocolate", category: 4 }, { name: "Coriander", category: 1 }, { name: "Cream", category: 7 },
-    { name: "Dog Food", category: 6 }, { name: "Dunc's Cereal", category: 3 }, { name: "Feta", category: 7 }, { name: "Frozen Veg", category: 8 },
-    { name: "Garlic", category: 1 }, { name: "Garlic Powder", category: 5 }, { name: "Ginger", category: 1 }, { name: "Green Beans", category: 1 },
-    { name: "Ham", category: 2 }, { name: "Ice Cream", category: 8 }, { name: "Kumara", category: 1 }, { name: "Leeks", category: 1 },
-    { name: "Lemons", category: 1 }, { name: "Limes", category: 1 }, { name: "Marmalade", category: 3 }, { name: "Marmite", category: 3 },
-    { name: "Mayonnaise", category: 5 }, { name: "Milk", category: 7 }, { name: "Mushrooms", category: 1 }, { name: "Onion Powder", category: 5 },
-    { name: "Onions", category: 1 }, { name: "Oxo Cubes", category: 5 }, { name: "Oyster Sauce", category: 5 }, { name: "Paper Towels", category: 6 },
-    { name: "Paprika", category: 5 }, { name: "Parsley", category: 1 }, { name: "Peanut Butter", category: 3 }, { name: "Pork Mince", category: 2 },
-    { name: "Potatoes", category: 1 }, { name: "Regular Cheese", category: 7 }, { name: "Salad", category: 1 }, { name: "Shell's Cereal", category: 3 },
-    { name: "Soy Sauce", category: 5 }, { name: "Spinach", category: 1 }, { name: "Steak", category: 2 }, { name: "Thyme", category: 1 },
-    { name: "Tinned Beans", category: 5 }, { name: "Tinned Tomatoes", category: 5 }, { name: "Toilet Paper", category: 6 }, { name: "Tomato Sauce", category: 5 },
-    { name: "Tomatoes", category: 1 }, { name: "Toothpaste", category: 9 }, { name: "Vogel Bread", category: 1 }, { name: "Zucchini", category: 1 }
-  ];
-
-  /* Pastel cycle for the badge bg */
-  const PASTELS = ['--p1','--p2','--p3','--p4','--p5','--p6','--p7','--p8','--p9'];
-
-  /* Build category dropdown for custom items */
-  const customCat = document.getElementById('customCat');
-  Object.keys(categories).forEach(k=>{
-    const opt = document.createElement('option');
-    opt.value = k; opt.textContent = categories[k];
-    customCat.appendChild(opt);
-  });
-
-  const grid = document.getElementById("itemGrid");
-  const selected = new Set();
-
-  /* Sort and render grid with emoji icons */
-  items.sort((a, b) => a.name.localeCompare(b.name));
-
-  function makeCard(item, idx){
-    const div = document.createElement("div");
-    div.className = "item";
-    div.dataset.name = item.name;
-
-    const pastelVar = PASTELS[idx % PASTELS.length];
-    const bg = getComputedStyle(document.documentElement).getPropertyValue(pastelVar).trim();
-    const emoji = EMOJI[item.name] || "🛒";
-
-    div.innerHTML = `
-      <div class="thumb" style="background:${bg}"><span aria-hidden="true">${emoji}</span></div>
-      <div class="name">${item.name}</div>
-    `;
-    div.onclick = () => {
-      div.classList.toggle("selected");
-      selected.has(item.name) ? selected.delete(item.name) : selected.add(item.name);
+  <script>
+    var categories = {
+      1: 'Bread, fruit, veg',
+      2: 'Meat and deli',
+      3: 'Cereals, spreads',
+      4: 'Confectionery, chocolate etc',
+      5: 'Stocks, pasta, rice, tinned veg, international foods',
+      6: 'Dog food, cleaning products, paper towels, toilet paper',
+      7: 'Dairy',
+      8: 'Frozen',
+      9: 'Health'
     };
-    return div;
-  }
 
-  function mountInitialGrid(){
-    grid.innerHTML = '';
-    items.forEach((it,i) => grid.appendChild(makeCard(it,i)));
-  }
-  mountInitialGrid();
+    var EMOJI = {
+      'Bread':'🍞','Milk':'🥛','Cream':'🥛','Regular Cheese':'🧀','Feta':'🧀','Butter':'🧈',
+      'Capsicums':'🫑','Onions':'🧅','Potatoes':'🥔','Salad':'🥗','Thyme':'🌿','Parsley':'🌿','Coriander':'🌿','Garlic':'🧄',
+      'Bananas':'🍌','Lemons':'🍋','Limes':'🍈','Tomatoes':'🍅','Cherry Tomatoes':'🍅','Kumara':'🍠','Ginger':'🫚','Leeks':'🧅','Green Beans':'🫛','Broccoli':'🥦','Courgettes':'🥒','Spinach':'🥬','Mushrooms':'🍄',
+      'Beef Mince':'🥩','Pork Mince':'🥩','Steak':'🥩','Chicken':'🍗','Ham':'🍖','Lamb':'🍖','Bacon':'🥓',
+      "Shell's Cereal":'🥣',"Dunc's Cereal":'🥣','Vogel Bread':'🍞','Branston':'🫙','Peanut Butter':'🥜','Marmite':'🫙','Marmalade':'🫙','Chocolate':'🍫',
+      'Tinned Tomatoes':'🍅','Tinned Beans':'🫘','Beef Stock':'🧂','Chicken Stock':'🧂',
+      'Dog Food':'🦴','Paper Towels':'🧻','Toilet Paper':'🧻','Toothpaste':'🪥','Frozen Veg':'🥶','Ice Cream':'🍨',
+      'Tomato Sauce':'🍅','Mayonnaise':'🧴','Soy Sauce':'🍶','Oyster Sauce':'🧴','Garlic Powder':'🧄','Onion Powder':'🧅','Paprika':'🌶️','Oxo Cubes':'🧂','Burger Sauce':'🍔'
+    };
 
-  /* Add custom item */
-  document.getElementById('addBtn').addEventListener('click', () => {
-    const input = document.getElementById('customName');
-    const raw = input.value.trim();
-    if(!raw) return;
-    const cat = parseInt(customCat.value,10) || 1;
-    const name = raw.replace(/\s+/g,' ').replace(/\b\w/g, c => c.toUpperCase());
-    items.push({name, category:cat});
-    items.sort((a,b)=> a.name.localeCompare(b.name));
-    mountInitialGrid();
-    input.value = '';
-  });
+    var items = [
+      { name:'Bread', category:1 },{ name:'Milk', category:7 },{ name:'Cream', category:7 },{ name:'Regular Cheese', category:7 },{ name:'Feta', category:7 },{ name:'Butter', category:7 },
+      { name:'Capsicums', category:1 },{ name:'Onions', category:1 },{ name:'Potatoes', category:1 },{ name:'Salad', category:1 },{ name:'Thyme', category:1 },{ name:'Parsley', category:1 },{ name:'Coriander', category:1 },{ name:'Garlic', category:1 },
+      { name:'Bananas', category:1 },{ name:'Lemons', category:1 },{ name:'Limes', category:1 },{ name:'Tomatoes', category:1 },{ name:'Cherry Tomatoes', category:1 },{ name:'Kumara', category:1 },{ name:'Ginger', category:1 },{ name:'Leeks', category:1 },{ name:'Green Beans', category:1 },{ name:'Broccoli', category:1 },{ name:'Courgettes', category:1 },{ name:'Spinach', category:1 },{ name:'Mushrooms', category:1 },
+      { name:'Beef Mince', category:2 },{ name:'Pork Mince', category:2 },{ name:'Steak', category:2 },{ name:'Chicken', category:2 },{ name:'Ham', category:2 },{ name:'Lamb', category:2 },{ name:'Bacon', category:2 },
+      { name:"Shell's Cereal", category:3 },{ name:"Dunc's Cereal", category:3 },{ name:'Vogel Bread', category:1 },{ name:'Branston', category:3 },{ name:'Peanut Butter', category:3 },{ name:'Marmite', category:3 },{ name:'Marmalade', category:3 },{ name:'Chocolate', category:4 },
+      { name:'Tinned Tomatoes', category:5 },{ name:'Tinned Beans', category:5 },{ name:'Beef Stock', category:5 },{ name:'Chicken Stock', category:5 },
+      { name:'Tomato Sauce', category:5 },{ name:'Mayonnaise', category:5 },{ name:'Soy Sauce', category:5 },{ name:'Oyster Sauce', category:5 },{ name:'Garlic Powder', category:5 },{ name:'Onion Powder', category:5 },{ name:'Paprika', category:5 },{ name:'Oxo Cubes', category:5 },{ name:'Burger Sauce', category:5 },
+      { name:'Dog Food', category:6 },{ name:'Paper Towels', category:6 },{ name:'Toilet Paper', category:6 },{ name:'Toothpaste', category:9 },{ name:'Frozen Veg', category:8 },{ name:'Ice Cream', category:8 }
+    ];
 
-  /* List screen */
-  function showList() {
-    const listScreen = document.getElementById("listScreen");
-    const finalList = document.getElementById("finalList");
-    finalList.innerHTML = "";
-    const byCat = {};
-    selected.forEach(name => {
-      const found = items.find(i => i.name === name);
-      if (!found) return;
-      const { category } = found;
-      if (!byCat[category]) byCat[category] = [];
-      byCat[category].push(name);
-    });
+    var grid = document.getElementById('itemGrid');
+    var selected = new Set();
 
-    // Render categories in supermarket order
-    Object.keys(categories).forEach(catNum => {
-      const names = byCat[catNum];
-      if (names && names.length > 0) {
-        names.sort((a,b)=> a.localeCompare(b));
-        const catDiv = document.createElement("div");
-        catDiv.className = "category";
-        catDiv.innerHTML = "<h2>"+categories[catNum]+"</h2><ul>" + names.map(n => "<li>"+n+"</li>").join("") + "</ul>";
-        finalList.appendChild(catDiv);
+    function renderGrid(){
+      grid.innerHTML = '';
+      items.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      for (var i=0;i<items.length;i++){
+        var name = items[i].name;
+        var icon = EMOJI[name] || '🛒';
+        var div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = '<div class="thumb">'+icon+'</div><div>'+name+'</div>';
+        div.onclick = (function(n){ return function(){ this.classList.toggle('selected'); if(selected.has(n)) selected.delete(n); else selected.add(n); }; })(name);
+        grid.appendChild(div);
       }
-    });
+    }
+    renderGrid();
 
-    // Show only the list (hide picker & floating button)
-    document.getElementById('pickScreen').style.display = 'none';
-    document.getElementById('cta').style.display = 'none';
-    listScreen.classList.add('active');
-    window.scrollTo({top:0, behavior:'instant'});
-  }
+    function addNewItem(){
+      var val = document.getElementById('newItem').value.trim();
+      if (!val) return;
+      var parts = val.split(' ');
+      var clean = [];
+      for (var j=0;j<parts.length;j++){ var w = parts[j].trim(); if(w){ clean.push(w.charAt(0).toUpperCase()+w.slice(1)); } }
+      var cap = clean.join(' ');
+      items.push({ name: cap, category: 5 });
+      document.getElementById('newItem').value = '';
+      renderGrid();
+    }
 
-  function goBack() {
-    document.getElementById('pickScreen').style.display = 'block';
-    document.getElementById('cta').style.display = '';
-    document.getElementById("listScreen").classList.remove('active');
-  }
+    function showList(){
+      var listScreen = document.getElementById('listScreen');
+      var finalList = document.getElementById('finalList');
+      finalList.innerHTML = '';
+      var byCat = {};
+      selected.forEach(function(name){
+        var found = null;
+        for (var i=0;i<items.length;i++){ if(items[i].name === name){ found = items[i]; break; } }
+        if (!found) return;
+        var cat = found.category;
+        if (!byCat[cat]) byCat[cat] = [];
+        var emoji = EMOJI[name] || '🛒';
+        byCat[cat].push(emoji + ' ' + name);
+      });
 
-  document.getElementById('shopBtn').addEventListener('click', showList);
-  window.goBack = goBack;
-</script>
+      var keys = Object.keys(categories);
+      for (var k=0;k<keys.length;k++){
+        var catNum = keys[k];
+        var names = byCat[catNum];
+        if (names && names.length){
+          names.sort(function(a,b){ return a.localeCompare(b); });
+          var catDiv = document.createElement('div');
+          catDiv.className = 'category';
+          var html = '<h2>'+categories[catNum]+'</h2><ul>';
+          for (var m=0;m<names.length;m++){ html += '<li>'+names[m]+'</li>'; }
+          html += '</ul>';
+          catDiv.innerHTML = html;
+          finalList.appendChild(catDiv);
+        }
+      }
+
+      document.querySelector('h1').style.display = 'none';
+      document.querySelector('.add-item').style.display = 'none';
+      grid.style.display = 'none';
+      document.querySelector('.button-wrapper').style.display = 'none';
+      listScreen.style.display = 'block';
+      window.scrollTo(0,0);
+    }
+
+    function goBack(){
+      document.querySelector('h1').style.display = 'block';
+      document.querySelector('.add-item').style.display = 'flex';
+      grid.style.display = 'grid';
+      document.querySelector('.button-wrapper').style.display = 'flex';
+      document.getElementById('listScreen').style.display = 'none';
+    }
+  </script>
 </body>
 </html>
-
