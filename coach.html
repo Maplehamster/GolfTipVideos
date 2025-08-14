@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Leadership Conversation Coach</title>
+<style>
+  :root{
+    --bg:#0f1720; --card:#1b2733; --ink:#e6f0f8; --muted:#9fb3c8; --accent:#3aa675;
+  }
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:850px;margin:0 auto;padding:16px 16px 96px}
+  header{display:flex;align-items:center;gap:10px;padding:12px 0}
+  header a{color:var(--muted);text-decoration:none;border:1px solid #294355;padding:6px 10px;border-radius:10px}
+  .card{background:var(--card);border:1px solid #233647;border-radius:16px;padding:14px;min-height:55vh}
+  .messages{display:flex;flex-direction:column;gap:10px}
+  .msg{padding:10px 12px;border-radius:12px;max-width:80%}
+  .you{align-self:flex-end;background:#25394a;border:1px solid #2f4a60}
+  .bot{align-self:flex-start;background:#1a2430;border:1px solid #2a3e52}
+  .muted{color:var(--muted);font-size:13px}
+  .dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent,rgba(15,23,32,.9) 20%, rgba(15,23,32,1) 60%);padding:16px}
+  .bar{max-width:850px;margin:0 auto;background:var(--card);border:1px solid #233647;border-radius:14px;display:flex;gap:8px;padding:8px}
+  textarea{flex:1;resize:none;background:transparent;border:none;color:var(--ink);height:60px;outline:none;padding:8px}
+  button{background:var(--accent);color:#03150d;border:none;padding:10px 14px;border-radius:12px;font-weight:600;cursor:pointer}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+  .chip{border:1px dashed #2d475a;color:var(--muted);padding:6px 10px;border-radius:999px;font-size:13px;cursor:pointer}
+  .chip:hover{border-style:solid;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a href="/GolfTipVideos/index.html">← Home</a>
+    <h1 style="margin:0;font-size:20px">Leadership Conversation Coach</h1>
+  </header>
+
+  <div class="card">
+    <div id="messages" class="messages">
+      <div class="msg bot">👋 I’m your prep coach. Set the scene: who are you talking to and what’s the topic?</div>
+    </div>
+
+    <div class="row">
+      <div class="chip" data-insert="Purpose: …  Desired outcome: …">Prompt: Purpose/Outcome</div>
+      <div class="chip" data-insert="Difficulty (1–10): …  Pushbacks I expect: …">Prompt: Difficulty</div>
+      <div class="chip" data-insert="Draft opener: “…”  Risks: …  Must‑say points: …">Prompt: Openers</div>
+    </div>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="bar">
+    <textarea id="input" placeholder="Type your message… (Enter to send, Shift+Enter for new line)"></textarea>
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+
+<script>
+  // 1) Paste your Worker URL here (from Cloudflare → your worker → "Visit")
+  const WORKER_URL = "https://lucky-dawn-6cea.burmans2006.workers.dev/";
+
+  // 2) Coach behavior
+  const SYSTEM_PROMPT = `
+You are a Leadership Conversation Coach. Keep it practical and concise. Ask ONE question at a time.
+Help the user: (1) clarify purpose and desired outcome, (2) anticipate pushbacks, (3) craft an opener.
+When they say "ready for role-play", play the team member and STAY in character.
+If they type "pause", step out of character and offer 2–3 options to handle the moment.
+`;
+
+  const messagesEl = document.getElementById("messages");
+  const inputEl = document.getElementById("input");
+  const sendBtn = document.getElementById("sendBtn");
+
+  function addMsg(text, who="bot"){
+    const div = document.createElement("div");
+    div.className = `msg ${who}`;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  document.querySelectorAll(".chip").forEach(c=>{
+    c.addEventListener("click", ()=>{
+      inputEl.value = (inputEl.value ? inputEl.value + "\n" : "") + c.dataset.insert;
+      inputEl.focus();
+    });
+  });
+
+  async function send(){
+    const text = inputEl.value.trim();
+    if(!text) return;
+    addMsg(text, "you");
+    inputEl.value = "";
+    sendBtn.disabled = true;
+
+    // Build minimal message history (last ~10 bubbles)
+    const bubbles = Array.from(document.querySelectorAll(".msg")).slice(-10);
+    const history = bubbles.map(b => ({
+      role: b.classList.contains("you") ? "user" : "assistant",
+      content: b.textContent
+    }));
+
+    const payload = {
+      system: SYSTEM_PROMPT,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...history,
+        { role: "user", content: text }
+      ]
+    };
+
+    try{
+      const res = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const reply = data?.choices?.[0]?.message?.content || "Sorry, I didn’t catch that.";
+      addMsg(reply, "bot");
+    }catch(err){
+      addMsg("Error: " + err.message, "bot");
+    }finally{
+      sendBtn.disabled = false;
+    }
+  }
+
+  sendBtn.addEventListener("click", send);
+  inputEl.addEventListener("keydown", e=>{
+    if(e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      send();
+    }
+  });
+</script>
+</body>
+</html>
