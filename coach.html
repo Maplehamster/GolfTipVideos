@@ -5,53 +5,49 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Leadership Conversation Coach</title>
 <style>
-  :root{
-    --bg:#0f1720; --card:#1b2733; --ink:#e6f0f8; --muted:#9fb3c8; --accent:#3aa675;
-    --line:#233647; --chip:#2d475a; --btn:#3aa675; --btn-ink:#03150d; --pill:#1a2430;
-  }
+  :root{ --bg:#0f1720; --card:#1b2733; --ink:#e6f0f8; --muted:#9fb3c8; --accent:#3aa675; --line:#233647; --pill:#1a2430; }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{max-width:850px;margin:0 auto;padding:16px 16px 96px}
+  .wrap{max-width:850px;margin:0 auto;padding:16px 16px 112px}
   header{display:flex;align-items:center;gap:10px;padding:12px 0;flex-wrap:wrap}
-  header a{color:var(--muted);text-decoration:none;border:1px solid #294355;padding:6px 10px;border-radius:10px}
+  a.home{color:var(--muted);text-decoration:none;border:1px solid #294355;padding:6px 10px;border-radius:10px}
   h1{margin:0;font-size:20px}
   .hint{font-size:12px;color:var(--muted)}
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .pill{display:inline-flex;align-items:center;gap:8px;background:var(--pill);border:1px solid #2a3e52;color:var(--muted);padding:6px 10px;border-radius:999px;font-size:13px}
-  .btn{background:var(--btn);color:var(--btn-ink);border:none;padding:8px 12px;border-radius:12px;font-weight:700;cursor:pointer}
+  .btn{background:var(--accent);color:#03150d;border:none;padding:8px 12px;border-radius:12px;font-weight:700;cursor:pointer}
   .btn.secondary{background:#2f4a60;color:#d5e6f2;border:1px solid #355a71}
   .btn.armed{outline:2px solid #6ec1ff}
   .slider{display:flex;align-items:center;gap:10px}
   input[type="range"]{width:220px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;min-height:55vh}
   .messages{display:flex;flex-direction:column;gap:10px}
-  .msg{padding:10px 12px;border-radius:12px;max-width:80%}
+  .msg{padding:10px 12px;border-radius:12px;max-width:80%;white-space:pre-wrap}
   .you{align-self:flex-end;background:#25394a;border:1px solid #2f4a60}
   .bot{align-self:flex-start;background:#1a2430;border:1px solid #2a3e52}
-  .muted{color:var(--muted);font-size:13px}
   .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
-  .chip{border:1px dashed var(--chip);color:var(--muted);padding:6px 10px;border-radius:999px;font-size:13px;cursor:pointer}
+  .chip{border:1px dashed #2d475a;color:var(--muted);padding:6px 10px;border-radius:999px;font-size:13px;cursor:pointer}
   .chip:hover{border-style:solid;color:var(--ink)}
   .dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent,rgba(15,23,32,.9) 20%, rgba(15,23,32,1) 60%);padding:16px}
   .bar{max-width:850px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:14px;display:flex;gap:8px;padding:8px}
   textarea{flex:1;resize:none;background:transparent;border:none;color:var(--ink);height:60px;outline:none;padding:8px}
-  .icon{font-size:14px}
+  audio{display:none}
 </style>
 <link rel="icon" href="/GolfTipVideos/favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="wrap">
   <header>
-    <a href="/GolfTipVideos/index.html">← Home</a>
+    <a class="home" href="/GolfTipVideos/index.html">← Home</a>
     <h1>Leadership Conversation Coach</h1>
     <div class="hint">Pause or stop at any time — you can ask me for tips and advice, or just take a break.</div>
 
     <div class="controls" style="width:100%;justify-content:space-between">
       <div class="controls">
-        <button id="prepBtn" class="btn secondary">Start Prep</button>
-        <button id="roleBtn" class="btn secondary">Start Role‑play</button>
-        <button id="feedBtn" class="btn secondary">Start Feedback</button>
-        <span class="pill"><span class="icon">🎯</span> Stage: <strong id="stageLabel">Prep</strong></span>
+        <button id="prepBtn" class="btn secondary">Prep</button>
+        <button id="roleBtn" class="btn secondary">Role‑play</button>
+        <button id="feedBtn" class="btn secondary">Feedback</button>
+        <span class="pill"><span>🎯</span> Stage: <strong id="stageLabel">Prep</strong></span>
       </div>
       <div class="controls">
         <div class="slider">
@@ -63,18 +59,16 @@
     </div>
 
     <div class="controls">
-      <button id="micBtn" class="btn">🎤 Talk</button>
-      <button id="ttsBtn" class="btn secondary">🔈 Voice Replies: On</button>
+      <button id="voiceBtn" class="btn">🎙️ Start Voice</button>
       <button id="stopBtn" class="btn secondary">⏹ Stop</button>
-      <span class="pill" id="micStatus">● Mic: off</span>
-      <span class="pill" id="netStatus">Ready</span>
+      <span class="pill" id="rtcStatus">Idle</span>
     </div>
   </header>
 
   <div class="card">
     <div id="messages" class="messages">
       <div class="msg bot">👋 I’m your prep coach. Set the scene: who are you talking to and what’s the topic?</div>
-      <div class="msg bot muted">Tip: In role‑play you can say “pause” for ideas or “stop” to end the round.</div>
+      <div class="msg bot">Tip: In role‑play say “pause” for ideas or “stop” to end the round.</div>
     </div>
 
     <div class="row">
@@ -87,218 +81,138 @@
 
 <div class="dock">
   <div class="bar">
-    <textarea id="input" placeholder="Type your message… (Enter to send, Shift+Enter for new line)"></textarea>
+    <textarea id="input" placeholder="Speak… or type and press Enter"></textarea>
     <button id="sendBtn" class="btn">Send</button>
   </div>
 </div>
 
+<audio id="assistantAudio" autoplay></audio>
+
 <script>
-  // === 1) Your Worker URL ===
-  const WORKER_URL = "https://lucky-dawn-6cea.burmans2006.workers.dev/";
+// 🔧 CHANGE THIS ONE LINE:
+const WORKER_SESSION_URL = "https://voice-ticket-xxxxx.workers.dev/session"; // ← your Worker URL from step 1
+const REALTIME_URL = "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
 
-  // === 2) System / behavior prompt ===
-  const SYSTEM_PROMPT = `
-You are a Leadership Conversation Coach. Be practical and concise. Ask ONE question at a time.
-Phases:
-- prep: clarify purpose & desired outcome, risks, opener.
-- roleplay: act as the team member at DIFFICULTY 1–10. Stay in character.
-  If the user says "pause", step out of character and offer 2–3 options to handle the moment.
-  If the user says "stop", end roleplay immediately and ask how they'd like to proceed.
-- feedback: give specific, constructive feedback on clarity, empathy, and next actions.
-Always respect the 'difficulty' level passed in the request.
-`;
+const els = {
+  messages: document.getElementById("messages"),
+  input: document.getElementById("input"),
+  send: document.getElementById("sendBtn"),
+  voice: document.getElementById("voiceBtn"),
+  stop: document.getElementById("stopBtn"),
+  rtcStatus: document.getElementById("rtcStatus"),
+  prep: document.getElementById("prepBtn"),
+  role: document.getElementById("roleBtn"),
+  feed: document.getElementById("feedBtn"),
+  stageLabel: document.getElementById("stageLabel"),
+  difficulty: document.getElementById("difficulty"),
+  diffVal: document.getElementById("diffVal"),
+  audio: document.getElementById("assistantAudio"),
+};
+function addMsg(text, who="bot"){
+  const div = document.createElement("div");
+  div.className = `msg ${who}`; div.textContent = text;
+  els.messages.appendChild(div);
+  els.messages.scrollTop = els.messages.scrollHeight;
+}
 
-  // === 3) DOM handles ===
-  const els = {
-    messages: document.getElementById("messages"),
-    input: document.getElementById("input"),
-    send: document.getElementById("sendBtn"),
-    prep: document.getElementById("prepBtn"),
-    role: document.getElementById("roleBtn"),
-    feed: document.getElementById("feedBtn"),
-    stageLabel: document.getElementById("stageLabel"),
-    difficulty: document.getElementById("difficulty"),
-    diffVal: document.getElementById("diffVal"),
-    micBtn: document.getElementById("micBtn"),
-    ttsBtn: document.getElementById("ttsBtn"),
-    stopBtn: document.getElementById("stopBtn"),
-    micStatus: document.getElementById("micStatus"),
-    netStatus: document.getElementById("netStatus"),
-  };
+// Stage & difficulty (sent live to the voice chat)
+let stage = "prep";
+function setStage(s){
+  stage = s;
+  [els.prep, els.role, els.feed].forEach(b=>b.classList.remove("armed"));
+  if(s==="prep") els.prep.classList.add("armed");
+  if(s==="roleplay") els.role.classList.add("armed");
+  if(s==="feedback") els.feed.classList.add("armed");
+  els.stageLabel.textContent = s==="roleplay" ? "Role‑play" : s[0].toUpperCase()+s.slice(1);
+  addMsg(`Stage set to ${els.stageLabel.textContent}.`, "bot");
+  sendSessionUpdate(true);
+}
+els.prep.addEventListener("click", ()=>setStage("prep"));
+els.role.addEventListener("click", ()=>setStage("roleplay"));
+els.feed.addEventListener("click", ()=>setStage("feedback"));
+els.difficulty.addEventListener("input", ()=>{ els.diffVal.textContent = els.difficulty.value; sendSessionUpdate(true); });
 
-  // === 4) UI helpers ===
-  function addMsg(text, who="bot"){
-    const div = document.createElement("div");
-    div.className = `msg ${who}`;
-    div.textContent = text;
-    els.messages.appendChild(div);
-    els.messages.scrollTop = els.messages.scrollHeight;
+// Realtime voice (WebRTC) — just click Start Voice and allow the mic
+let pc, dc, micStream;
+async function startVoice(){
+  if(pc) return;
+  els.rtcStatus.textContent = "Connecting…";
+
+  // Get a short-lived ticket from your Worker
+  const sess = await fetch(WORKER_SESSION_URL).then(r=>r.json());
+  const EPHEMERAL_KEY = sess?.client_secret?.value;
+  if(!EPHEMERAL_KEY){ els.rtcStatus.textContent = "No session ticket"; return; }
+
+  micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true } });
+
+  pc = new RTCPeerConnection();
+  const inbound = new MediaStream();
+  els.audio.srcObject = inbound;
+  pc.ontrack = (e)=> inbound.addTrack(e.track);
+  micStream.getTracks().forEach(t=> pc.addTrack(t, micStream));
+  pc.onconnectionstatechange = ()=> els.rtcStatus.textContent = `RTC: ${pc.connectionState}`;
+
+  // Data channel for sending simple text/updates
+  dc = pc.createDataChannel("oai-events");
+
+  // Create offer → send to OpenAI → set answer
+  const offer = await pc.createOffer({ offerToReceiveAudio: true });
+  await pc.setLocalDescription(offer);
+  const answerSDP = await fetch(REALTIME_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${EPHEMERAL_KEY}`, "Content-Type": "application/sdp" },
+    body: offer.sdp
+  }).then(r=>r.text());
+  await pc.setRemoteDescription({ type: "answer", sdp: answerSDP });
+
+  // Send an initial hello that matches the current stage
+  sendSessionUpdate(true);
+}
+function stopVoice(){
+  if(pc){ pc.close(); pc=null; }
+  if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+  els.rtcStatus.textContent = "Stopped";
+}
+els.voice.addEventListener("click", startVoice);
+els.stop.addEventListener("click", stopVoice);
+
+// Push your stage/difficulty into the live session
+function sendSessionUpdate(withGreeting=false){
+  if(!dc || dc.readyState !== "open") return;
+  const diff = Number(els.difficulty.value);
+  const instr =
+    `You are a Leadership Conversation Coach.\n` +
+    `Stage: ${stage}.\n` +
+    `Difficulty: ${diff} (1 easiest, 10 most combative).\n` +
+    `Ask one question at a time. In roleplay, stay strictly in character. ` +
+    `On 'pause', step out with 2–3 short options. On 'stop', end immediately.`;
+  dc.send(JSON.stringify({ type: "session.update", session: { instructions: instr, voice: "verse" }}));
+  if(withGreeting){
+    const line = stage==="roleplay" ? "Okay, I’ll play the team member. Start when you’re ready."
+      : stage==="feedback" ? "Tell me what happened and I’ll give specific feedback."
+      : "Let’s prep. What’s your purpose and desired outcome?";
+    dc.send(JSON.stringify({ type: "input_text", text: line }));
+    addMsg(line, "bot");
   }
-  function setNetStatus(text){ els.netStatus.textContent = text }
-  function setMicStatus(text, color){ els.micStatus.textContent = text; els.micStatus.style.color = color || "" }
+}
 
-  // chips
-  document.querySelectorAll(".chip").forEach(c=>{
-    c.addEventListener("click", ()=>{
-      els.input.value = (els.input.value ? els.input.value + "\n" : "") + c.dataset.insert;
-      els.input.focus();
-    });
-  });
-
-  // === 5) Stage & difficulty ===
-  let stage = "prep"; // "prep" | "roleplay" | "feedback"
-  function setStage(s){
-    stage = s;
-    [els.prep, els.role, els.feed].forEach(b=>b.classList.remove("armed"));
-    if(s==="prep") els.prep.classList.add("armed");
-    if(s==="roleplay") els.role.classList.add("armed");
-    if(s==="feedback") els.feed.classList.add("armed");
-    els.stageLabel.textContent = s==="roleplay" ? "Role‑play" : s[0].toUpperCase() + s.slice(1);
-    addMsg(`Stage set to ${els.stageLabel.textContent}.`, "bot");
-  }
-  els.prep.addEventListener("click", ()=>setStage("prep"));
-  els.role.addEventListener("click", ()=>setStage("roleplay"));
-  els.feed.addEventListener("click", ()=>setStage("feedback"));
-  setStage("prep");
-
-  els.difficulty.addEventListener("input", ()=>{
-    els.diffVal.textContent = els.difficulty.value;
-  });
-
-  // === 6) Voice: TTS (output) ===
-  let ttsOn = true;
-  function speak(text){
-    if(!ttsOn) return;
-    if(!("speechSynthesis" in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  }
-  els.ttsBtn.addEventListener("click", ()=>{
-    ttsOn = !ttsOn;
-    els.ttsBtn.textContent = `🔈 Voice Replies: ${ttsOn ? "On" : "Off"}`;
-  });
-
-  // === 7) Voice: Speech Recognition (input) ===
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let rec = null, listening = false;
-  if(SR){
-    rec = new SR();
-    rec.lang = "en-NZ";       // adjust if you like
-    rec.interimResults = true;
-    rec.continuous = false;
-
-    rec.onstart = ()=>{ listening = true; setMicStatus("● Listening…", "#2cff72") };
-    rec.onerror = e => { setMicStatus("● Mic error", "#f35"); listening=false };
-    rec.onend = ()=>{ listening = false; setMicStatus("● Mic: off", "") };
-    rec.onresult = evt=>{
-      let finalTxt = "";
-      for (const res of evt.results){
-        if(res.isFinal) finalTxt += res[0].transcript + " ";
-      }
-      if(finalTxt.trim()){
-        els.input.value = finalTxt.trim();
-        send(); // auto-send what you spoke
-      }
-    };
-    els.micBtn.addEventListener("click", ()=>{
-      if(listening){ try{rec.stop()}catch{}; return; }
-      try{ rec.start() }catch{}
-    });
+// Text still works alongside voice
+function sendText(){
+  const text = els.input.value.trim();
+  if(!text) return;
+  addMsg(text, "you");
+  els.input.value = "";
+  if(dc && dc.readyState === "open"){
+    dc.send(JSON.stringify({ type: "input_text", text }));
   }else{
-    els.micBtn.disabled = true;
-    setMicStatus("● Mic: unavailable", "#f35");
+    addMsg("(Click ‘Start Voice’ to connect the coach.)", "bot");
   }
+}
+els.send.addEventListener("click", sendText);
+els.input.addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendText(); }});
 
-  // Stop all
-  els.stopBtn.addEventListener("click", ()=>{
-    if(rec){ try{ rec.stop() }catch{} }
-    if("speechSynthesis" in window){ window.speechSynthesis.cancel() }
-    setMicStatus("● Mic: off", "");
-    setNetStatus("Stopped");
-    addMsg("Stopped. You can ask for tips or take a break anytime.", "bot");
-  });
-
-  // === 8) Send to Worker ===
-  async function send(){
-    const text = els.input.value.trim();
-    if(!text) return;
-    addMsg(text, "you");
-    els.input.value = "";
-    els.send.disabled = true;
-    setNetStatus("Thinking…");
-
-    // last ~10 bubbles for context
-    const bubbles = Array.from(document.querySelectorAll(".msg")).slice(-10);
-    const history = bubbles.map(b => ({
-      role: b.classList.contains("you") ? "user" : "assistant",
-      content: b.textContent
-    }));
-
-    // Voice commands convenience
-    if (/^\s*pause\s*$/i.test(text) && stage==="roleplay"){
-      // Let the model know, but also give immediate confirmation
-      addMsg("Paused. What do you want help with?", "bot");
-      setStage("prep");
-      els.send.disabled = false;
-      setNetStatus("Ready");
-      return;
-    }
-    if (/^\s*stop\s*$/i.test(text)){
-      els.stopBtn.click();
-      els.send.disabled = false;
-      setNetStatus("Ready");
-      return;
-    }
-
-    const payload = {
-      system: SYSTEM_PROMPT,
-      // Keep your original message shape (plus metadata for stage/difficulty)
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...history,
-        { role: "user", content: text }
-      ],
-      // New: pass knobs your Worker can read
-      stage,                                 // "prep" | "roleplay" | "feedback"
-      difficulty: Number(els.difficulty.value) // 1..10
-    };
-
-    try{
-      const res = await fetch(WORKER_URL, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(payload)
-      });
-      if(!res.ok){
-        const t = await res.text();
-        throw new Error(`Server ${res.status}: ${t||res.statusText}`);
-      }
-      const data = await res.json();
-
-      // Support both your previous OpenAI-like shape and simple {reply:""}
-      const reply =
-        data?.choices?.[0]?.message?.content ??
-        data?.reply ?? data?.message ?? data?.text ?? "Sorry, I didn’t catch that.";
-
-      addMsg(reply, "bot");
-      speak(reply);
-      setNetStatus("Ready");
-    }catch(err){
-      addMsg("Error: " + err.message, "bot");
-      setNetStatus("Network error");
-    }finally{
-      els.send.disabled = false;
-    }
-  }
-
-  els.send.addEventListener("click", send);
-  els.input.addEventListener("keydown", e=>{
-    if(e.key === "Enter" && !e.shiftKey){
-      e.preventDefault();
-      send();
-    }
-  });
+// Default stage
+setStage("prep");
 </script>
 </body>
 </html>
