@@ -24,6 +24,7 @@
 </head>
 <body>
   <h1>🛒 Tap to Add to List</h1>
+
   <div class="add-item">
     <input type="text" id="newItem" placeholder="Add item..." />
     <button onclick="addNewItem()">Add</button>
@@ -42,6 +43,7 @@
   </div>
 
   <script>
+    // Category names for the final list screen
     var categories = {
       1: 'Bread, fruit, veg',
       2: 'Meat and deli',
@@ -54,6 +56,7 @@
       9: 'Health'
     };
 
+    // Cute emoji for tiles
     var EMOJI = {
       'Bread':'🍞','Milk':'🥛','Cream':'🥛','Regular Cheese':'🧀','Feta':'🧀','Butter':'🧈',
       'Capsicums':'🫑','Onions':'🧅','Potatoes':'🥔','Salad':'🥗','Thyme':'🌿','Parsley':'🌿','Coriander':'🌿','Garlic':'🧄',
@@ -65,6 +68,7 @@
       'Tomato Sauce':'🍅','Mayonnaise':'🧴','Soy Sauce':'🍶','Oyster Sauce':'🧴','Garlic Powder':'🧄','Onion Powder':'🧅','Paprika':'🌶️','Oxo Cubes':'🧂','Burger Sauce':'🍔'
     };
 
+    // Master items list
     var items = [
       { name:'Bread', category:1 },{ name:'Milk', category:7 },{ name:'Cream', category:7 },{ name:'Regular Cheese', category:7 },{ name:'Feta', category:7 },{ name:'Butter', category:7 },
       { name:'Capsicums', category:1 },{ name:'Onions', category:1 },{ name:'Potatoes', category:1 },{ name:'Salad', category:1 },{ name:'Thyme', category:1 },{ name:'Parsley', category:1 },{ name:'Coriander', category:1 },{ name:'Garlic', category:1 },
@@ -79,59 +83,75 @@
     var grid = document.getElementById('itemGrid');
     var selected = new Set();
 
-   <script>
-  function renderGrid(){
-    grid.innerHTML = '';
-    items.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    // Build the grid and PRESERVE selection state
+    function renderGrid(){
+      grid.innerHTML = '';
+      items.sort(function(a,b){ return a.name.localeCompare(b.name); });
 
-    for (var i = 0; i < items.length; i++){
-      (function(name){
-        var icon = EMOJI[name] || '🛒';
-        var div = document.createElement('div');
+      for (var i=0;i<items.length;i++){
+        (function(name){
+          var icon = EMOJI[name] || '🛒';
+          var div = document.createElement('div');
+          div.className = 'item' + (selected.has(name) ? ' selected' : '');
+          div.innerHTML = '<div class="thumb">'+icon+'</div><div>'+name+'</div>';
 
-        // Preserve visual selection after re-render
-        div.className = 'item' + (selected.has(name) ? ' selected' : '');
-        div.innerHTML = '<div class="thumb">' + icon + '</div><div>' + name + '</div>';
+          div.onclick = function(){
+            if (selected.has(name)) {
+              selected.delete(name);
+              div.classList.remove('selected');
+            } else {
+              selected.add(name);
+              div.classList.add('selected');
+            }
+          };
 
-        // Keep Set and CSS class in sync
-        div.onclick = function(){
-          if (selected.has(name)) {
-            selected.delete(name);
-            div.classList.remove('selected');
-          } else {
-            selected.add(name);
-            div.classList.add('selected');
-          }
-        };
-
-        grid.appendChild(div);
-      })(items[i].name);
+          grid.appendChild(div);
+        })(items[i].name);
+      }
     }
-  }
-</script>
 
+    renderGrid();
 
-
+    // Add a new custom item (no duplicates), then re-render (keeping selection)
     function addNewItem(){
       var val = document.getElementById('newItem').value.trim();
       if (!val) return;
+
+      // Capitalise words nicely
       var parts = val.split(' ');
       var clean = [];
-      for (var j=0;j<parts.length;j++){ var w = parts[j].trim(); if(w){ clean.push(w.charAt(0).toUpperCase()+w.slice(1)); } }
+      for (var j=0;j<parts.length;j++){
+        var w = parts[j].trim();
+        if(w){ clean.push(w.charAt(0).toUpperCase()+w.slice(1)); }
+      }
       var cap = clean.join(' ');
+
+      // Prevent duplicates (case-insensitive)
+      var exists = items.some(function(it){ return it.name.toLowerCase() === cap.toLowerCase(); });
+      if (exists) {
+        document.getElementById('newItem').value = '';
+        return;
+      }
+
+      // Default new items into pantry/international category (5)
       items.push({ name: cap, category: 5 });
       document.getElementById('newItem').value = '';
-      renderGrid();
+      renderGrid(); // selection is preserved
     }
 
+    // Build the final list grouped by category
     function showList(){
       var listScreen = document.getElementById('listScreen');
       var finalList = document.getElementById('finalList');
       finalList.innerHTML = '';
+
       var byCat = {};
       selected.forEach(function(name){
+        // find item to grab its category
         var found = null;
-        for (var i=0;i<items.length;i++){ if(items[i].name === name){ found = items[i]; break; } }
+        for (var i=0;i<items.length;i++){
+          if(items[i].name === name){ found = items[i]; break; }
+        }
         if (!found) return;
         var cat = found.category;
         if (!byCat[cat]) byCat[cat] = [];
@@ -169,9 +189,8 @@
       grid.style.display = 'grid';
       document.querySelector('.button-wrapper').style.display = 'flex';
       document.getElementById('listScreen').style.display = 'none';
+      // No re-render needed; selection stays exactly as-is
     }
   </script>
 </body>
 </html>
-
-
