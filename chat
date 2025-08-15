@@ -102,7 +102,7 @@
 
   <script>
   /* === Configure this === */
-  const EPHEMERAL_URL = "https://YOUR-WORKER-OR-FUNCTION-URL/session"; // e.g. https://oai-voice-yourname.workers.dev/session
+ const EPHEMERAL_URL = "https://burmans2006.workers.dev/session"; // e.g. https://oai-voice-yourname.workers.dev/session
   const REALTIME_MODEL = "gpt-4o-realtime-preview"; // Check docs for latest model string
   const VOICE = "alloy"; // Voice name, see OpenAI docs
 
