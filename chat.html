@@ -65,6 +65,9 @@
     .pill:hover{background:rgba(255,255,255,.06)}
     .pill.danger{border-color:rgba(239,68,68,.45); color:#fecaca}
 
+    /* CHANGED: style the Home button & voice select consistently */
+    .left-actions{display:flex; align-items:center; gap:8px}
+    select.pill{background:#0000}
     audio{display:none}
     a{color:#93c5fd}
   </style>
@@ -72,8 +75,24 @@
 <body>
   <div class="app">
     <div class="topbar">
-      <!-- CHANGED: Added Home button to go back to your home page -->
-      <a href="index.html" class="pill" aria-label="Go to Home">Home</a>
+      <div class="left-actions">
+        <!-- CHANGED: Home button to go back to your home page -->
+        <a href="index.html" class="pill" aria-label="Go to Home">Home</a>
+        <!-- CHANGED: Optional voice dropdown for quick testing -->
+        <label for="voiceSel" class="pill" style="gap:6px; display:flex; align-items:center;">
+          <span style="opacity:.8">Voice</span>
+          <select id="voiceSel" class="pill" aria-label="Choose voice">
+            <option value="verse" selected>verse</option>
+            <option value="ballad">ballad</option>
+            <option value="alloy">alloy</option>
+            <option value="ash">ash</option>
+            <option value="coral">coral</option>
+            <option value="echo">echo</option>
+            <option value="sage">sage</option>
+            <option value="shimmer">shimmer</option>
+          </select>
+        </label>
+      </div>
       <div class="title">Chat (Voice)</div>
       <div id="status" class="status">Idle</div>
     </div>
@@ -104,10 +123,24 @@
 
   <script>
   /* === Configure this === */
-  const EPHEMERAL_URL = "https://oai-voice.burmans2006.workers.dev/session"; // e.g. https://oai-voice-yourname.workers.dev/session
-  const REALTIME_MODEL = "gpt-4o-realtime-preview"; // Check docs for latest model string
-  // CHANGED: Set the voice to an English female-style voice (adjust if needed)
-  const VOICE = "aria"; // e.g. "aria" / "verse" / etc., depending on what's enabled for your account
+  const EPHEMERAL_URL = "https://oai-voice.burmans2006.workers.dev/session"; // your Worker that returns an ephemeral key
+  const REALTIME_MODEL = "gpt-4o-realtime-preview"; // latest realtime model name
+
+  // CHANGED: Default to a UK-leaning voice ("verse"); you can switch from the dropdown
+  const VOICE = "verse";
+
+  // CHANGED: Force transcription to English (skip language auto-detect)
+  const TRANSCRIBE_MODEL = "gpt-4o-transcribe"; // fallback to "whisper-1" if needed
+
+  // CHANGED: Centralized session defaults we send on connect
+  const SESSION_DEFAULTS = {
+    voice: VOICE,
+    input_audio_transcription: {
+      model: TRANSCRIBE_MODEL,
+      language: "en" // force English
+    },
+    instructions: "Speak English (UK). Do not switch languages unless I explicitly ask."
+  };
 
   /* === UI helpers === */
   const $ = (q) => document.querySelector(q);
@@ -155,6 +188,19 @@
 
       // Optional: data channel for events/text
       dc = pc.createDataChannel('oai-events');
+
+      // CHANGED: Set session defaults (voice + English STT) as soon as channel opens
+      dc.onopen = ()=>{
+        try{
+          // If you used the dropdown, capture it here before sending
+          const vsel = document.getElementById('voiceSel');
+          if (vsel && vsel.value) SESSION_DEFAULTS.voice = vsel.value;
+          dc.send(JSON.stringify({ type: "session.update", session: SESSION_DEFAULTS }));
+        }catch(err){
+          console.warn("Failed to set session defaults", err);
+        }
+      };
+
       dc.onmessage = (ev)=> {
         try {
           const msg = JSON.parse(ev.data);
@@ -164,16 +210,6 @@
             addLine('AI', msg.response.output_text);
           }
         } catch { /* ignore non-JSON */ }
-      };
-
-      // CHANGED: When the data channel opens, set the TTS voice to the chosen English female voice
-      dc.onopen = ()=>{
-        try{
-          const sessionUpdate = { type: "session.update", session: { voice: VOICE } };
-          dc.send(JSON.stringify(sessionUpdate));
-        }catch(err){
-          console.warn("Failed to set voice via session.update", err);
-        }
       };
 
       // Create offer SDP
@@ -252,11 +288,14 @@
     status(isMuted ? 'Muted' : 'Listening');
   }
 
-  // Wire up UI
+  // CHANGED: Start button — voice is read from dropdown before connecting
   document.getElementById('toggleBtn').addEventListener('click', ()=>{
-    if(connected) return; // when connected this button is read only
+    if(connected) return;
+    const vsel = document.getElementById('voiceSel');
+    if (vsel && vsel.value) SESSION_DEFAULTS.voice = vsel.value;
     startChat();
   });
+
   document.getElementById('hangupBtn').addEventListener('click', endChat);
   document.getElementById('muteBtn').addEventListener('click', toggleMute);
 
