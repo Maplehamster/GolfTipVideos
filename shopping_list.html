@@ -79,19 +79,37 @@
     var grid = document.getElementById('itemGrid');
     var selected = new Set();
 
-    function renderGrid(){
-      grid.innerHTML = '';
-      items.sort(function(a,b){ return a.name.localeCompare(b.name); });
-      for (var i=0;i<items.length;i++){
-        var name = items[i].name;
+   <script>
+  function renderGrid(){
+    grid.innerHTML = '';
+    items.sort(function(a,b){ return a.name.localeCompare(b.name); });
+
+    for (var i = 0; i < items.length; i++){
+      (function(name){
         var icon = EMOJI[name] || '🛒';
         var div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = '<div class="thumb">'+icon+'</div><div>'+name+'</div>';
-        div.onclick = (function(n){ return function(){ this.classList.toggle('selected'); if(selected.has(n)) selected.delete(n); else selected.add(n); }; })(name);
+
+        // Preserve visual selection after re-render
+        div.className = 'item' + (selected.has(name) ? ' selected' : '');
+        div.innerHTML = '<div class="thumb">' + icon + '</div><div>' + name + '</div>';
+
+        // Keep Set and CSS class in sync
+        div.onclick = function(){
+          if (selected.has(name)) {
+            selected.delete(name);
+            div.classList.remove('selected');
+          } else {
+            selected.add(name);
+            div.classList.add('selected');
+          }
+        };
+
         grid.appendChild(div);
-      }
+      })(items[i].name);
     }
+  }
+</script>
+
     renderGrid();
 
     function addNewItem(){
@@ -155,3 +173,4 @@
   </script>
 </body>
 </html>
+
