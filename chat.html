@@ -61,7 +61,7 @@
 
     .hint{font-size:12px; color:var(--muted)}
     .row{display:flex; gap:8px; align-items:center; justify-content:center}
-    .pill{padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.1); color:var(--text); background:transparent; cursor:pointer}
+    .pill{padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.1); color:var(--text); background:transparent; cursor:pointer; text-decoration:none}
     .pill:hover{background:rgba(255,255,255,.06)}
     .pill.danger{border-color:rgba(239,68,68,.45); color:#fecaca}
 
@@ -72,6 +72,8 @@
 <body>
   <div class="app">
     <div class="topbar">
+      <!-- CHANGED: Added Home button to go back to your home page -->
+      <a href="index.html" class="pill" aria-label="Go to Home">Home</a>
       <div class="title">Chat (Voice)</div>
       <div id="status" class="status">Idle</div>
     </div>
@@ -102,9 +104,10 @@
 
   <script>
   /* === Configure this === */
- const EPHEMERAL_URL = "https://oai-voice.burmans2006.workers.dev/session"; // e.g. https://oai-voice-yourname.workers.dev/session
+  const EPHEMERAL_URL = "https://oai-voice.burmans2006.workers.dev/session"; // e.g. https://oai-voice-yourname.workers.dev/session
   const REALTIME_MODEL = "gpt-4o-realtime-preview"; // Check docs for latest model string
-  const VOICE = "alloy"; // Voice name, see OpenAI docs
+  // CHANGED: Set the voice to an English female-style voice (adjust if needed)
+  const VOICE = "aria"; // e.g. "aria" / "verse" / etc., depending on what's enabled for your account
 
   /* === UI helpers === */
   const $ = (q) => document.querySelector(q);
@@ -161,6 +164,16 @@
             addLine('AI', msg.response.output_text);
           }
         } catch { /* ignore non-JSON */ }
+      };
+
+      // CHANGED: When the data channel opens, set the TTS voice to the chosen English female voice
+      dc.onopen = ()=>{
+        try{
+          const sessionUpdate = { type: "session.update", session: { voice: VOICE } };
+          dc.send(JSON.stringify(sessionUpdate));
+        }catch(err){
+          console.warn("Failed to set voice via session.update", err);
+        }
       };
 
       // Create offer SDP
