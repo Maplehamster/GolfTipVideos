@@ -1,26 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta charset="UTF-8">
+  <!-- CHANGED: Add viewport so the image fits properly on phones -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Golf Tip Videos</title>
+  <!-- CHANGED: Keep a single favicon link (removed duplicate outside <head>) -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <style>
+    /* CHANGED: Ensure full-height layout and hide scrollbars so image fits exactly */
+    html, body { height: 100%; overflow: hidden; }
+
+    /* CHANGED: Removed invalid HTML (<p><a>Chat</a></p>) that was inside the <style> block */
+
     body {
       margin: 0;
       padding: 0;
       background-color: #000;
       font-family: sans-serif;
     }
-<p><a href="chat.html">Chat</a></p>
 
-    img {
+    /* CHANGED: Make the background image reliably fill the whole viewport */
+    img.bg {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
+      inset: 0;            /* replaces top/left/width/height */
+      width: 100%;
+      height: 100%;
+      object-fit: cover;   /* use 'contain' if you want zero cropping with letterboxing */
+      object-position: center center;
       z-index: -1;
+      pointer-events: none;
     }
 
     .nav {
@@ -54,11 +63,11 @@
     }
   </style>
 </head>
-  <link rel="icon" href="/GolfTipVideos/favicon.svg" type="image/svg+xml">
 <body>
-  <img src="home-image.jpg" alt="Homepage Image">
+  <!-- CHANGED: Added class 'bg' to apply full-viewport image styles -->
+  <img class="bg" src="home-image.jpg" alt="Homepage Image">
 
-  <div class="nav">
+  <nav class="nav">
     <h1>Golf Tip Videos</h1>
     <a href="golf_pairings_randomizer.html">Golf Pairings Randomizer</a>
     <a href="montyhall.html">Monty Hall Game</a>
@@ -66,12 +75,8 @@
     <a href="reflective_sphere_360.html">Reflective Sphere</a>
     <a href="shopping_list.html">Shopping List</a>
     <a href="/GolfTipVideos/coach.html">Leadership Conversation Coach</a>
-    <li><a href="chat.html">Chat</a></li>
-  </div>
+    <!-- CHANGED: Removed stray <li> so no bullet/dot shows next to Chat -->
+    <a href="chat.html">Chat</a>
+  </nav>
 </body>
 </html>
-
-
-
-
-
