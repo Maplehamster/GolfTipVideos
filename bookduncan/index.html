@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <title>Book Duncan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>Book Duncan</h1>
   <div id="calendar"></div>
 
-  <!-- Gecko image -->
+  <!-- Gecko image (positioned offscreen until strike) -->
   <img id="gecko" src="gecko.png" alt="Gecko">
 
-  <!-- Tongue animation canvas -->
+  <!-- Canvas for tongue animation -->
   <canvas id="tongueCanvas"></canvas>
 
   <!-- Flick sound effect -->
   <audio id="flickSound" src="flick.mp3" preload="auto"></audio>
 
-  <!-- JavaScript functionality -->
+  <!-- Main functionality -->
   <script src="script.js"></script>
 </body>
 </html>
