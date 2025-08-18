@@ -45,7 +45,19 @@ body {
   z-index: 999;
 }
 
+#gecko {
+  position: fixed;
+  bottom: 30px;
+  right: -200px; /* hidden offscreen to the right */
+  width: 150px;
+  transition: right 0.5s ease, transform 0.3s ease;
+  z-index: 1000;
+  pointer-events: none;
+  transform: scaleX(-1); /* flips gecko to face left */
+}
+
 #gecko.strike {
-  transform: rotate(10deg);
+  right: 30px;        /* slides in from the right */
+  transform: scaleX(-1) rotate(-10deg);
 }
 
