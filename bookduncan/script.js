@@ -1,4 +1,4 @@
-// script.js — Full fixed version with visible calendar, correct mouth-aligned tongue, and disappearing cursor
+// script.js — Fixed: Calendar visible, tongue from correct side, and working cursor hide
 
 const gecko = document.getElementById('gecko');
 const flickSound = document.getElementById('flickSound');
@@ -22,7 +22,7 @@ document.addEventListener('mousemove', (e) => {
   cursorY = e.clientY;
 });
 
-// Generate 30-day calendar inside #calendar
+// Generate 30-day calendar
 const today = new Date();
 for (let i = 0; i < 30; i++) {
   const date = new Date(today);
@@ -35,7 +35,6 @@ for (let i = 0; i < 30; i++) {
 }
 
 function startGeckoAttack() {
-  // Reset gecko position
   gecko.style.transition = 'none';
   gecko.style.right = '-150px';
   gecko.style.display = 'block';
@@ -48,7 +47,7 @@ function startGeckoAttack() {
       playFlickSound();
 
       const geckoRect = gecko.getBoundingClientRect();
-      const mouthX = geckoRect.right - 20;
+      const mouthX = geckoRect.left + 20; // correct side for flipped gecko
       const mouthY = geckoRect.top + geckoRect.height / 2;
 
       drawTongue(mouthX, mouthY, cursorX, cursorY, () => {
@@ -60,9 +59,9 @@ function startGeckoAttack() {
 }
 
 function hideCursor() {
-  document.body.style.cursor = 'none';
+  document.body.classList.add('hide-cursor');
   setTimeout(() => {
-    document.body.style.cursor = 'default';
+    document.body.classList.remove('hide-cursor');
   }, 5000);
 }
 
