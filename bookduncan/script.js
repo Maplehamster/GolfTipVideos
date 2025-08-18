@@ -1,11 +1,8 @@
-const calendar = document.getElementById('calendar');
-const today = new Date();
 const gecko = document.getElementById('gecko');
 const flickSound = document.getElementById('flickSound');
 const canvas = document.getElementById('tongueCanvas');
 const ctx = canvas.getContext('2d');
 
-// Set canvas to fill screen
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
@@ -14,36 +11,42 @@ window.addEventListener('resize', () => {
   canvas.height = window.innerHeight;
 });
 
-// Generate 30-day calendar
-for (let i = 0; i < 30; i++) {
-  const date = new Date(today);
-  date.setDate(today.getDate() + i);
+let cursorX = 0;
+let cursorY = 0;
 
-  const day = document.createElement('div');
-  day.className = 'day';
-  day.textContent = date.toDateString();
-  day.addEventListener('click', handleDateClick);
-  calendar.appendChild(day);
-}
+// Track real-time cursor position
+document.addEventListener('mousemove', (e) => {
+  cursorX = e.clientX;
+  cursorY = e.clientY;
+});
 
-function handleDateClick(e) {
-  const cursorX = e.clientX;
-  const cursorY = e.clientY;
+document.addEventListener('click', () => {
+  startGeckoAttack();
+});
 
-  // Gecko slides in from right
-  gecko.classList.add('strike');
+function startGeckoAttack() {
+  // Place gecko off-screen
+  gecko.style.transition = 'none';
+  gecko.style.right = '-150px';
+  gecko.style.display = 'block';
 
-  // Wait for gecko to slide in
+  // Trigger dart-in
   setTimeout(() => {
-    playFlickSound();
+    gecko.style.transition = 'right 0.2s ease-in';
+    gecko.style.right = '30px';
 
-    // Approximate gecko mouth position
-    const geckoMouthX = window.innerWidth - 60;
-    const geckoMouthY = window.innerHeight - 100;
+    setTimeout(() => {
+      playFlickSound();
 
-    drawTongue(geckoMouthX, geckoMouthY, cursorX, cursorY);
-    eatCursor();
-  }, 500);
+      const mouthX = window.innerWidth - 60;
+      const mouthY = window.innerHeight - 100;
+
+      drawTongue(mouthX, mouthY, cursorX, cursorY, () => {
+        eatCursor();
+        retractGecko();
+      });
+    }, 200);
+  }, 10);
 }
 
 function playFlickSound() {
@@ -53,21 +56,23 @@ function playFlickSound() {
 
 function eatCursor() {
   document.body.style.cursor = 'none';
-
   setTimeout(() => {
     document.body.style.cursor = 'default';
-    gecko.classList.remove('strike');
-    clearCanvas();
   }, 5000);
 }
 
-function drawTongue(x1, y1, x2, y2) {
+function retractGecko() {
+  gecko.style.transition = 'right 0.2s ease-out';
+  gecko.style.right = '-150px';
+}
+
+function drawTongue(x1, y1, x2, y2, onComplete) {
   ctx.strokeStyle = 'red';
   ctx.lineWidth = 6;
   ctx.lineCap = 'round';
 
   let progress = 0;
-  const duration = 250;
+  const duration = 100;
   const startTime = performance.now();
 
   function animate(time) {
@@ -86,6 +91,11 @@ function drawTongue(x1, y1, x2, y2) {
 
     if (progress < 1) {
       requestAnimationFrame(animate);
+    } else {
+      setTimeout(() => {
+        clearCanvas();
+        onComplete();
+      }, 50);
     }
   }
 
