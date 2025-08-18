@@ -1,4 +1,3 @@
-// Setup
 const calendar = document.getElementById('calendar');
 const today = new Date();
 const gecko = document.getElementById('gecko');
@@ -6,6 +5,7 @@ const flickSound = document.getElementById('flickSound');
 const canvas = document.getElementById('tongueCanvas');
 const ctx = canvas.getContext('2d');
 
+// Set canvas to fill screen
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
@@ -14,7 +14,7 @@ window.addEventListener('resize', () => {
   canvas.height = window.innerHeight;
 });
 
-// Calendar generation
+// Generate 30-day calendar
 for (let i = 0; i < 30; i++) {
   const date = new Date(today);
   date.setDate(today.getDate() + i);
@@ -30,27 +30,20 @@ function handleDateClick(e) {
   const cursorX = e.clientX;
   const cursorY = e.clientY;
 
-  // Slide in gecko
-  gecko.style.left = '100px';
+  // Gecko slides in from right
   gecko.classList.add('strike');
 
-  // After gecko slides in, flick tongue
+  // Wait for gecko to slide in
   setTimeout(() => {
     playFlickSound();
-    drawTongue(150, window.innerHeight / 2, cursorX, cursorY); // 150 = gecko tip X
+
+    // Approximate gecko mouth position
+    const geckoMouthX = window.innerWidth - 60;
+    const geckoMouthY = window.innerHeight - 100;
+
+    drawTongue(geckoMouthX, geckoMouthY, cursorX, cursorY);
     eatCursor();
   }, 500);
-}
-
-function eatCursor() {
-  document.body.style.cursor = 'none';
-
-  setTimeout(() => {
-    document.body.style.cursor = 'default';
-    gecko.style.left = '-200px';
-    gecko.classList.remove('strike');
-    clearCanvas();
-  }, 5000);
 }
 
 function playFlickSound() {
@@ -58,13 +51,23 @@ function playFlickSound() {
   flickSound.play();
 }
 
+function eatCursor() {
+  document.body.style.cursor = 'none';
+
+  setTimeout(() => {
+    document.body.style.cursor = 'default';
+    gecko.classList.remove('strike');
+    clearCanvas();
+  }, 5000);
+}
+
 function drawTongue(x1, y1, x2, y2) {
   ctx.strokeStyle = 'red';
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
 
-  // Animate tongue
   let progress = 0;
-  const duration = 300;
+  const duration = 250;
   const startTime = performance.now();
 
   function animate(time) {
@@ -72,9 +75,13 @@ function drawTongue(x1, y1, x2, y2) {
     if (progress > 1) progress = 1;
 
     clearCanvas();
+
+    const currentX = x1 + (x2 - x1) * progress;
+    const currentY = y1 + (y2 - y1) * progress;
+
     ctx.beginPath();
     ctx.moveTo(x1, y1);
-    ctx.lineTo(x1 + (x2 - x1) * progress, y1 + (y2 - y1) * progress);
+    ctx.lineTo(currentX, currentY);
     ctx.stroke();
 
     if (progress < 1) {
