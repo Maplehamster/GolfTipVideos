@@ -1,7 +1,10 @@
+// script.js — Full rewrite with calendar, tongue from gecko mouth, and working cursor disappear
+
 const gecko = document.getElementById('gecko');
 const flickSound = document.getElementById('flickSound');
 const canvas = document.getElementById('tongueCanvas');
 const ctx = canvas.getContext('2d');
+const calendar = document.getElementById('calendar');
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -14,7 +17,6 @@ window.addEventListener('resize', () => {
 let cursorX = 0;
 let cursorY = 0;
 
-// Track real-time cursor position
 document.addEventListener('mousemove', (e) => {
   cursorX = e.clientX;
   cursorY = e.clientY;
@@ -25,12 +27,11 @@ document.addEventListener('click', () => {
 });
 
 function startGeckoAttack() {
-  // Place gecko off-screen
+  // Reset position and show gecko
   gecko.style.transition = 'none';
   gecko.style.right = '-150px';
   gecko.style.display = 'block';
 
-  // Trigger dart-in
   setTimeout(() => {
     gecko.style.transition = 'right 0.2s ease-in';
     gecko.style.right = '30px';
@@ -38,8 +39,9 @@ function startGeckoAttack() {
     setTimeout(() => {
       playFlickSound();
 
-      const mouthX = window.innerWidth - 60;
-      const mouthY = window.innerHeight - 100;
+      const geckoRect = gecko.getBoundingClientRect();
+      const mouthX = geckoRect.left + 20; // approx mouth point
+      const mouthY = geckoRect.top + geckoRect.height / 2;
 
       drawTongue(mouthX, mouthY, cursorX, cursorY, () => {
         eatCursor();
@@ -47,11 +49,6 @@ function startGeckoAttack() {
       });
     }, 200);
   }, 10);
-}
-
-function playFlickSound() {
-  flickSound.currentTime = 0;
-  flickSound.play();
 }
 
 function eatCursor() {
@@ -64,6 +61,11 @@ function eatCursor() {
 function retractGecko() {
   gecko.style.transition = 'right 0.2s ease-out';
   gecko.style.right = '-150px';
+}
+
+function playFlickSound() {
+  flickSound.currentTime = 0;
+  flickSound.play();
 }
 
 function drawTongue(x1, y1, x2, y2, onComplete) {
@@ -104,4 +106,16 @@ function drawTongue(x1, y1, x2, y2, onComplete) {
 
 function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Generate 30-day calendar
+const today = new Date();
+for (let i = 0; i < 30; i++) {
+  const date = new Date(today);
+  date.setDate(today.getDate() + i);
+
+  const day = document.createElement('div');
+  day.className = 'day';
+  day.textContent = date.toDateString();
+  calendar.appendChild(day);
 }
