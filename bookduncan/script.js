@@ -1,4 +1,4 @@
-// script.js — Fixed: Calendar visible, tongue from correct side, and working cursor hide
+// script.js — Final fix: tongue aligned, cursor hidden on all elements, gecko strike works
 
 const gecko = document.getElementById('gecko');
 const flickSound = document.getElementById('flickSound');
@@ -47,8 +47,8 @@ function startGeckoAttack() {
       playFlickSound();
 
       const geckoRect = gecko.getBoundingClientRect();
-      const mouthX = geckoRect.left + 20; // correct side for flipped gecko
-      const mouthY = geckoRect.top + geckoRect.height / 2;
+      const mouthX = geckoRect.right - 30; // right edge minus offset for mouth
+      const mouthY = geckoRect.top + geckoRect.height / 2 - 30; // slightly up for mouth height
 
       drawTongue(mouthX, mouthY, cursorX, cursorY, () => {
         hideCursor();
