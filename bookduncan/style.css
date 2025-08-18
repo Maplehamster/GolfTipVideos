@@ -13,6 +13,32 @@ h1 {
   margin-bottom: 10px;
 }
 
+p {
+  margin-bottom: 20px;
+}
+
+#calendar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  max-width: 800px;
+  margin: 0 auto 50px;
+  padding: 0 20px;
+}
+
+.day {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.2s ease;
+}
+
+.day:hover {
+  transform: scale(1.05);
+  background: #334155;
+}
+
 #gecko {
   position: fixed;
   width: 150px;
@@ -20,7 +46,7 @@ h1 {
   right: -150px;
   pointer-events: none;
   transition: right 0.2s ease, transform 0.2s ease;
-  transform: scaleX(-1); /* flips gecko to face left */
+  transform: scaleX(-1); /* face left */
   z-index: 1000;
 }
 
@@ -32,4 +58,8 @@ h1 {
   height: 100vh;
   pointer-events: none;
   z-index: 999;
+}
+
+.hide-cursor {
+  cursor: none !important;
 }
