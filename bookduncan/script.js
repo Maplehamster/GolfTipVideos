@@ -1,4 +1,4 @@
-// script.js — Full rewrite with calendar, tongue from gecko mouth, and working cursor disappear
+// script.js — Full fixed version with visible calendar, correct mouth-aligned tongue, and disappearing cursor
 
 const gecko = document.getElementById('gecko');
 const flickSound = document.getElementById('flickSound');
@@ -22,12 +22,20 @@ document.addEventListener('mousemove', (e) => {
   cursorY = e.clientY;
 });
 
-document.addEventListener('click', () => {
-  startGeckoAttack();
-});
+// Generate 30-day calendar inside #calendar
+const today = new Date();
+for (let i = 0; i < 30; i++) {
+  const date = new Date(today);
+  date.setDate(today.getDate() + i);
+  const day = document.createElement('div');
+  day.className = 'day';
+  day.textContent = date.toDateString();
+  day.addEventListener('click', () => startGeckoAttack());
+  calendar.appendChild(day);
+}
 
 function startGeckoAttack() {
-  // Reset position and show gecko
+  // Reset gecko position
   gecko.style.transition = 'none';
   gecko.style.right = '-150px';
   gecko.style.display = 'block';
@@ -40,18 +48,18 @@ function startGeckoAttack() {
       playFlickSound();
 
       const geckoRect = gecko.getBoundingClientRect();
-      const mouthX = geckoRect.left + 20; // approx mouth point
+      const mouthX = geckoRect.right - 20;
       const mouthY = geckoRect.top + geckoRect.height / 2;
 
       drawTongue(mouthX, mouthY, cursorX, cursorY, () => {
-        eatCursor();
+        hideCursor();
         retractGecko();
       });
     }, 200);
   }, 10);
 }
 
-function eatCursor() {
+function hideCursor() {
   document.body.style.cursor = 'none';
   setTimeout(() => {
     document.body.style.cursor = 'default';
@@ -106,16 +114,4 @@ function drawTongue(x1, y1, x2, y2, onComplete) {
 
 function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// Generate 30-day calendar
-const today = new Date();
-for (let i = 0; i < 30; i++) {
-  const date = new Date(today);
-  date.setDate(today.getDate() + i);
-
-  const day = document.createElement('div');
-  day.className = 'day';
-  day.textContent = date.toDateString();
-  calendar.appendChild(day);
 }
