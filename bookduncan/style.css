@@ -60,6 +60,9 @@ p {
   z-index: 999;
 }
 
-.hide-cursor {
+/* Ensures cursor is hidden everywhere when active */
+.hide-cursor,
+.hide-cursor *,
+.hide-cursor *:hover {
   cursor: none !important;
 }
