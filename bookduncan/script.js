@@ -1,4 +1,4 @@
-// script.js — Final fix: tongue aligned, cursor hidden on all elements, gecko strike works
+// script.js — Cursor hidden correctly, tongue offset adjusted upward by 90px
 
 const gecko = document.getElementById('gecko');
 const flickSound = document.getElementById('flickSound');
@@ -47,8 +47,8 @@ function startGeckoAttack() {
       playFlickSound();
 
       const geckoRect = gecko.getBoundingClientRect();
-      const mouthX = geckoRect.right - 30; // right edge minus offset for mouth
-      const mouthY = geckoRect.top + geckoRect.height / 2 - 30; // slightly up for mouth height
+      const mouthX = geckoRect.right - 30;
+      const mouthY = geckoRect.top + geckoRect.height / 2 - 90; // ↑ offset tongue by 90px
 
       drawTongue(mouthX, mouthY, cursorX, cursorY, () => {
         hideCursor();
@@ -59,9 +59,9 @@ function startGeckoAttack() {
 }
 
 function hideCursor() {
-  document.body.classList.add('hide-cursor');
+  document.documentElement.classList.add('hide-cursor');
   setTimeout(() => {
-    document.body.classList.remove('hide-cursor');
+    document.documentElement.classList.remove('hide-cursor');
   }, 5000);
 }
 
