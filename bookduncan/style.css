@@ -37,4 +37,15 @@ body {
   z-index: 1000;
   pointer-events: none;
 }
+#tongueCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+
+#gecko.strike {
+  transform: rotate(10deg);
+}
 
